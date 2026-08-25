@@ -2,14 +2,23 @@
 
 import {
   AI_PROVIDERS,
-  DEFAULT_MODELS,
   GOOGLE_MODEL_OPTIONS,
   OLLAMA_BASE_OPTIONS,
   type AIProvider,
   type ProviderSettings,
 } from "@rupert/core";
 import { useEffect, useState } from "react";
-import { saveMcpUiSettings, saveStoredSettings, type McpUiSettings } from "@/lib/storage";
+import {
+  emptyProviderProfiles,
+  getProviderProfiles,
+  isProviderReady,
+  profileFromSettings,
+  saveMcpUiSettings,
+  saveStoredSettings,
+  settingsFromProfile,
+  type McpUiSettings,
+  type ProviderProfiles,
+} from "@/lib/storage";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -21,27 +30,62 @@ interface SettingsModalProps {
 
 const hosted = Boolean(process.env.NEXT_PUBLIC_VERCEL_ENV);
 
+function ReadyMark({ ready }: { ready: boolean }) {
+  if (ready) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-400">
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-300" aria-hidden />
+        Ready
+      </span>
+    );
+  }
+  return <span className="text-[10px] uppercase tracking-wider text-zinc-600">No key</span>;
+}
+
 export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState(settings);
+  const [localProfiles, setLocalProfiles] = useState<ProviderProfiles>(() => ({
+    ...emptyProviderProfiles(),
+    [settings.provider]: profileFromSettings(settings),
+  }));
   const [localMcp, setLocalMcp] = useState(mcp);
 
   useEffect(() => {
     setLocalSettings(settings);
     setLocalMcp(mcp);
+    if (!isOpen) return;
+    setLocalProfiles({
+      ...getProviderProfiles(),
+      [settings.provider]: profileFromSettings(settings),
+    });
   }, [settings, mcp, isOpen]);
 
   if (!isOpen) return null;
 
+  const syncSettings = (next: ProviderSettings) => {
+    setLocalSettings(next);
+    setLocalProfiles((prev) => ({
+      ...prev,
+      [next.provider]: profileFromSettings(next),
+    }));
+  };
+
   const handleProviderChange = (provider: AIProvider) => {
-    setLocalSettings({
-      ...localSettings,
-      provider,
-      model: DEFAULT_MODELS[provider],
-    });
+    if (provider === localSettings.provider) return;
+    const stashed: ProviderProfiles = {
+      ...localProfiles,
+      [localSettings.provider]: profileFromSettings(localSettings),
+    };
+    setLocalProfiles(stashed);
+    setLocalSettings(settingsFromProfile(provider, stashed[provider]));
   };
 
   const handleSave = () => {
-    saveStoredSettings(localSettings);
+    const profilesToSave: ProviderProfiles = {
+      ...localProfiles,
+      [localSettings.provider]: profileFromSettings(localSettings),
+    };
+    saveStoredSettings(localSettings, profilesToSave);
     saveMcpUiSettings(localMcp);
     onSave(localSettings, localMcp);
     onClose();
@@ -62,20 +106,30 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
         <div>
           <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Provider</label>
           <div className="grid grid-cols-2 gap-2">
-            {AI_PROVIDERS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => handleProviderChange(p)}
-                className={`py-2 text-xs font-mono capitalize rounded border ${
-                  localSettings.provider === p
-                    ? "bg-zinc-800 border-zinc-600 text-zinc-100"
-                    : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+            {AI_PROVIDERS.map((p) => {
+              const selected = localSettings.provider === p;
+              const ready = isProviderReady(
+                p,
+                selected ? localSettings : localProfiles[p],
+              );
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handleProviderChange(p)}
+                  className={`py-2 px-2 text-xs font-mono rounded border ${
+                    selected
+                      ? "bg-zinc-800 border-zinc-600 text-zinc-100"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  <span className="flex flex-col items-center gap-0.5">
+                    <span className="capitalize">{p}</span>
+                    <ReadyMark ready={ready} />
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -89,7 +143,7 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
             type="password"
             placeholder={localSettings.provider === "ollama" ? "Ollama Cloud key" : "sk-..."}
             value={localSettings.apiKey}
-            onChange={(e) => setLocalSettings({ ...localSettings, apiKey: e.target.value })}
+            onChange={(e) => syncSettings({ ...localSettings, apiKey: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
           />
           <p className="text-[10px] text-zinc-500 mt-1">
@@ -106,7 +160,7 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
           <input
             type="text"
             value={localSettings.model}
-            onChange={(e) => setLocalSettings({ ...localSettings, model: e.target.value })}
+            onChange={(e) => syncSettings({ ...localSettings, model: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
           />
           {localSettings.provider === "google" && (
@@ -115,7 +169,7 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => setLocalSettings({ ...localSettings, model: option.id })}
+                  onClick={() => syncSettings({ ...localSettings, model: option.id })}
                   className={`px-2 py-1 text-[10px] font-mono rounded border ${
                     localSettings.model === option.id
                       ? "bg-zinc-800 border-zinc-600 text-zinc-100"
@@ -136,7 +190,7 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
               type="text"
               placeholder="http://127.0.0.1:11434"
               value={localSettings.customBaseUrl || "http://127.0.0.1:11434"}
-              onChange={(e) => setLocalSettings({ ...localSettings, customBaseUrl: e.target.value })}
+              onChange={(e) => syncSettings({ ...localSettings, customBaseUrl: e.target.value })}
               className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
             />
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -146,7 +200,7 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => setLocalSettings({ ...localSettings, customBaseUrl: option.id })}
+                    onClick={() => syncSettings({ ...localSettings, customBaseUrl: option.id })}
                     className={`px-2 py-1 text-[10px] font-mono rounded border ${
                       current === option.id
                         ? "bg-zinc-800 border-zinc-600 text-zinc-100"

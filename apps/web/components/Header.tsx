@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProviderSettings } from "@rupert/core";
+import { isProviderReady, profileFromSettings } from "@/lib/storage";
 
 interface HeaderProps {
   settings: ProviderSettings;
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export function Header({ settings, onOpenSettings, onNewIdea, showNewIdea }: HeaderProps) {
   const modelLabel = settings.model.split("/").pop();
+  const ready = isProviderReady(settings.provider, profileFromSettings(settings));
   return (
     <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
       <div>
@@ -32,7 +34,19 @@ export function Header({ settings, onOpenSettings, onNewIdea, showNewIdea }: Hea
           onClick={onOpenSettings}
           className="px-3 py-1.5 text-xs font-mono uppercase bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 rounded transition"
         >
-          Provider: {settings.provider} ({modelLabel})
+          <span className="inline-flex items-center gap-2">
+            <span>
+              Provider: {settings.provider} ({modelLabel})
+            </span>
+            {ready ? (
+              <span className="inline-flex items-center gap-1 text-zinc-400">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-300" aria-hidden />
+                Ready
+              </span>
+            ) : (
+              <span className="text-zinc-500">No key</span>
+            )}
+          </span>
         </button>
       </div>
     </div>
