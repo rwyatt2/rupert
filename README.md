@@ -11,23 +11,30 @@ Surfaces share one evaluation core:
 
 ## Setup
 
-Requires Node 22+ and pnpm.
+Requires Node 22+ and pnpm. The web app uses [Clerk](https://clerk.com) for sign-in.
 
 ```bash
 pnpm install
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Create a Clerk application and enable **Email verification code**, **Google**, and **GitHub**. Paste the keys into `apps/web/.env.local`. Keep first/last name optional and leave passwords off so the email-code flow matches the sign-in page. For a local-only instance you can run `npx clerk@latest init` from `apps/web` instead.
+
+```bash
 pnpm web
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Set a provider and API key in the top-right. Keys stay in `localStorage` and are sent only with the current evaluation request.
+Open [http://localhost:3000](http://localhost:3000), sign in, then set a provider and API key in Settings. Keys stay in this browser, namespaced to your Clerk user, and are sent only with the current evaluation request.
 
 ## Host on Vercel
 
-Deploy the Next.js app in `apps/web`. No server-side API keys are required — users paste their own provider key in Settings.
+Deploy the Next.js app in `apps/web`. Rupert does not ship shared model keys — each signed-in user pastes **their own** provider key in Settings.
 
 1. Push this repo to GitHub (the Vercel project tracks git, not uncommitted files).
 2. [Import the repo](https://vercel.com/new) on Vercel.
 3. Set **Root Directory** to `apps/web`. Leave **Include source files outside of the Root Directory** on so `@rupert/core` and `@rupert/mcp-client` are available.
 4. Framework Preset: Next.js. Node.js: 22.x.
+5. Add the Clerk env vars from `apps/web/.env.example` (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and the sign-in URLs). Add your production origin to the Clerk allowed origins / redirect URLs.
 
 MCP evidence and local Ollama (`127.0.0.1`) are local-only. History on Vercel stays in the browser. Evaluations may run up to 5 minutes.
 

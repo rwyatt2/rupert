@@ -1,3 +1,5 @@
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -8,8 +10,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-zinc-950 font-sans antialiased">{children}</body>
-    </html>
+    <ClerkProvider appearance={dark} afterSignOutUrl="/sign-in">
+      <html lang="en">
+        <body className="min-h-screen bg-zinc-950 font-sans antialiased">{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

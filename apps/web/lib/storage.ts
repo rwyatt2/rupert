@@ -2,11 +2,15 @@ import {
   AI_PROVIDERS,
   DEFAULT_MODELS,
   DEFAULT_SETTINGS,
+  OLLAMA_CLOUD_URL,
+  OLLAMA_LOCAL_URL,
   isOllamaCloud,
   type AIProvider,
   type EvaluationReport,
   type ProviderSettings,
 } from "@rupert/core";
+
+const hosted = Boolean(process.env.NEXT_PUBLIC_VERCEL_ENV);
 
 const SETTINGS_KEY = "viability_engine_settings";
 const HISTORY_KEY = "viability_engine_history";
@@ -41,6 +45,40 @@ export const DEFAULT_MCP_UI: McpUiSettings = {
   onlyServers: [],
 };
 
+function scopedKey(base: string, userId: string): string {
+  return `${base}:${userId}`;
+}
+
+function readItem(base: string, userId: string): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(scopedKey(base, userId));
+}
+
+function writeItem(base: string, userId: string, value: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(scopedKey(base, userId), value);
+}
+
+export function migrateLegacyStorage(userId: string): void {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(scopedKey(SETTINGS_KEY, userId))) return;
+  const legacySettings = localStorage.getItem(SETTINGS_KEY);
+  if (!legacySettings) return;
+
+  localStorage.setItem(scopedKey(SETTINGS_KEY, userId), legacySettings);
+  const history = localStorage.getItem(HISTORY_KEY);
+  if (history) localStorage.setItem(scopedKey(HISTORY_KEY, userId), history);
+  const mcp = localStorage.getItem(MCP_KEY);
+  if (mcp) localStorage.setItem(scopedKey(MCP_KEY, userId), mcp);
+  const mode = localStorage.getItem(INPUT_MODE_KEY);
+  if (mode) localStorage.setItem(scopedKey(INPUT_MODE_KEY, userId), mode);
+
+  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(MCP_KEY);
+  localStorage.removeItem(INPUT_MODE_KEY);
+}
+
 export function emptyProviderProfiles(): ProviderProfiles {
   return Object.fromEntries(
     AI_PROVIDERS.map((provider) => [
@@ -48,7 +86,9 @@ export function emptyProviderProfiles(): ProviderProfiles {
       {
         apiKey: "",
         model: DEFAULT_MODELS[provider],
-        ...(provider === "ollama" ? { customBaseUrl: "http://127.0.0.1:11434" } : {}),
+        ...(provider === "ollama"
+          ? { customBaseUrl: hosted ? OLLAMA_CLOUD_URL : OLLAMA_LOCAL_URL }
+          : {}),
       } satisfies ProviderProfile,
     ]),
   ) as ProviderProfiles;
@@ -76,7 +116,9 @@ export function isProviderReady(
   profile: Pick<ProviderProfile, "apiKey" | "customBaseUrl">,
 ): boolean {
   if (profile.apiKey.trim()) return true;
-  return provider === "ollama" && !isOllamaCloud(profile.customBaseUrl);
+  if (provider !== "ollama") return false;
+  if (hosted || isOllamaCloud(profile.customBaseUrl)) return false;
+  return true;
 }
 
 function hydrateProfiles(
@@ -96,11 +138,11 @@ function hydrateProfiles(
   return profiles;
 }
 
-function parseStored(): { settings: ProviderSettings; profiles: ProviderProfiles } {
+function parseStored(userId: string): { settings: ProviderSettings; profiles: ProviderProfiles } {
   if (typeof window === "undefined") {
     return { settings: DEFAULT_SETTINGS, profiles: hydrateProfiles(undefined) };
   }
-  const raw = localStorage.getItem(SETTINGS_KEY);
+  const raw = readItem(SETTINGS_KEY, userId);
   if (!raw) {
     return { settings: DEFAULT_SETTINGS, profiles: hydrateProfiles(undefined) };
   }
@@ -117,20 +159,25 @@ function parseStored(): { settings: ProviderSettings; profiles: ProviderProfiles
   return { settings, profiles };
 }
 
-export function getStoredSettings(): ProviderSettings {
-  return parseStored().settings;
+export function getStoredSettings(userId: string): ProviderSettings {
+  return parseStored(userId).settings;
 }
 
-export function getProviderProfiles(): ProviderProfiles {
-  return parseStored().profiles;
+export function getProviderProfiles(userId: string): ProviderProfiles {
+  return parseStored(userId).profiles;
 }
 
-export function saveStoredSettings(settings: ProviderSettings, profiles?: ProviderProfiles): void {
+export function saveStoredSettings(
+  userId: string,
+  settings: ProviderSettings,
+  profiles?: ProviderProfiles,
+): void {
   if (typeof window === "undefined") return;
-  const nextProfiles = hydrateProfiles(profiles ?? parseStored().profiles);
+  const nextProfiles = hydrateProfiles(profiles ?? parseStored(userId).profiles);
   nextProfiles[settings.provider] = profileFromSettings(settings);
-  localStorage.setItem(
+  writeItem(
     SETTINGS_KEY,
+    userId,
     JSON.stringify({
       provider: settings.provider,
       apiKey: settings.apiKey,
@@ -141,45 +188,38 @@ export function saveStoredSettings(settings: ProviderSettings, profiles?: Provid
   );
 }
 
-export function getMcpUiSettings(): McpUiSettings {
-  if (typeof window === "undefined") return DEFAULT_MCP_UI;
-  const raw = localStorage.getItem(MCP_KEY);
+export function getMcpUiSettings(userId: string): McpUiSettings {
+  const raw = readItem(MCP_KEY, userId);
   return raw ? { ...DEFAULT_MCP_UI, ...JSON.parse(raw) } : DEFAULT_MCP_UI;
 }
 
-export function saveMcpUiSettings(settings: McpUiSettings): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(MCP_KEY, JSON.stringify(settings));
+export function saveMcpUiSettings(userId: string, settings: McpUiSettings): void {
+  writeItem(MCP_KEY, userId, JSON.stringify(settings));
 }
 
-export function getInputMode(): InputMode {
-  if (typeof window === "undefined") return "form";
-  const raw = localStorage.getItem(INPUT_MODE_KEY);
+export function getInputMode(userId: string): InputMode {
+  const raw = readItem(INPUT_MODE_KEY, userId);
   return raw === "chat" ? "chat" : "form";
 }
 
-export function saveInputMode(mode: InputMode): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(INPUT_MODE_KEY, mode);
+export function saveInputMode(userId: string, mode: InputMode): void {
+  writeItem(INPUT_MODE_KEY, userId, mode);
 }
 
-export function getEvaluationHistory(): EvaluationReport[] {
-  if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(HISTORY_KEY);
+export function getEvaluationHistory(userId: string): EvaluationReport[] {
+  const raw = readItem(HISTORY_KEY, userId);
   return raw ? JSON.parse(raw) : [];
 }
 
-export function saveEvaluationToHistory(report: EvaluationReport): void {
-  if (typeof window === "undefined") return;
-  const history = getEvaluationHistory();
+export function saveEvaluationToHistory(userId: string, report: EvaluationReport): void {
+  const history = getEvaluationHistory(userId);
   const updated = [report, ...history.filter((h) => h.id !== report.id)];
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(updated.slice(0, 50)));
+  writeItem(HISTORY_KEY, userId, JSON.stringify(updated.slice(0, 50)));
 }
 
-export function deleteEvaluationFromHistory(id: string): void {
-  if (typeof window === "undefined") return;
-  const history = getEvaluationHistory().filter((h) => h.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+export function deleteEvaluationFromHistory(userId: string, id: string): void {
+  const history = getEvaluationHistory(userId).filter((h) => h.id !== id);
+  writeItem(HISTORY_KEY, userId, JSON.stringify(history));
 }
 
 export function downloadText(filename: string, body: string, type: string): void {

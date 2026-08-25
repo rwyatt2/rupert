@@ -12,6 +12,9 @@
     "node": "22.x"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.8.2",
+    "@clerk/react": "^6.14.7",
+    "@clerk/themes": "^2.4.57",
     "@rupert/core": "workspace:*",
     "@rupert/mcp-client": "workspace:*",
     "mammoth": "^1.12.1",

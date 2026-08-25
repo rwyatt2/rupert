@@ -1,6 +1,12 @@
 "use client";
 
-import type { ChatBrief, EvaluationReport, IdeaInput, ProviderSettings } from "@rupert/core";
+import {
+  resolveOllamaSettings,
+  type ChatBrief,
+  type EvaluationReport,
+  type IdeaInput,
+  type ProviderSettings,
+} from "@rupert/core";
 import { FileDropZone } from "@/components/FileDropZone";
 import { Header } from "@/components/Header";
 import { HistorySidebar } from "@/components/HistorySidebar";
@@ -8,7 +14,7 @@ import { IdeaChat } from "@/components/IdeaChat";
 import { IdeaForm } from "@/components/IdeaForm";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Scorecard } from "@/components/Scorecard";
-import { SettingsModal } from "@/components/SettingsModal";
+import { SettingsModal, type SettingsTab } from "@/components/SettingsModal";
 import {
   briefNoteFromAttachment,
   ideaFromAttachment,
@@ -22,11 +28,16 @@ import {
   getInputMode,
   getMcpUiSettings,
   getStoredSettings,
+  isProviderReady,
+  migrateLegacyStorage,
+  profileFromSettings,
   saveEvaluationToHistory,
   saveInputMode,
+  saveStoredSettings,
   type InputMode,
   type McpUiSettings,
 } from "@/lib/storage";
+import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 
 function Banner({
@@ -63,9 +74,11 @@ function Banner({
 }
 
 export function Dashboard() {
+  const { userId, isLoaded } = useAuth();
   const [settings, setSettings] = useState<ProviderSettings | null>(null);
   const [mcp, setMcp] = useState<McpUiSettings>(DEFAULT_MCP_UI);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("models");
   const [currentReport, setCurrentReport] = useState<EvaluationReport | null>(null);
   const [history, setHistory] = useState<EvaluationReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,12 +91,30 @@ export function Dashboard() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    setSettings(getStoredSettings());
-    setMcp(getMcpUiSettings());
-    setHistory(getEvaluationHistory());
-    setInputMode(getInputMode());
+    if (!isLoaded || !userId) return;
+    migrateLegacyStorage(userId);
+    let next = getStoredSettings(userId);
+    if (next.provider === "ollama") {
+      const resolved = resolveOllamaSettings(next);
+      if (resolved.customBaseUrl !== next.customBaseUrl || resolved.model !== next.model) {
+        saveStoredSettings(userId, resolved);
+        next = resolved;
+      }
+    }
+    // Hydrate per-user browser state after Clerk identifies the session.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage load
+    setSettings(next);
+    setMcp(getMcpUiSettings(userId));
+    setHistory(getEvaluationHistory(userId));
+    setInputMode(getInputMode(userId));
+    setCurrentReport(null);
     return () => abortRef.current?.abort();
-  }, []);
+  }, [isLoaded, userId]);
+
+  const openSettings = (tab: SettingsTab) => {
+    setSettingsTab(tab);
+    setIsSettingsOpen(true);
+  };
 
   const handleCancel = () => {
     abortRef.current?.abort();
@@ -113,7 +144,7 @@ export function Dashboard() {
       setPrefillNonce((n) => n + 1);
       const mode: InputMode = next.classification.kind === "idea" ? "form" : "chat";
       setInputMode(mode);
-      saveInputMode(mode);
+      if (userId) saveInputMode(userId, mode);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Could not read that file.");
     } finally {
@@ -123,12 +154,12 @@ export function Dashboard() {
 
   const handleModeChange = (mode: InputMode) => {
     setInputMode(mode);
-    saveInputMode(mode);
+    if (userId) saveInputMode(userId, mode);
   };
 
   const handleEvaluate = async (payload: { idea?: IdeaInput; brief?: ChatBrief }) => {
-    if (!settings || (!settings.apiKey && settings.provider !== "ollama")) {
-      setIsSettingsOpen(true);
+    if (!userId || !settings || !isProviderReady(settings.provider, profileFromSettings(settings))) {
+      openSettings("models");
       setErrorMessage("Set an API key before running an evaluation.");
       setStoppedMessage(null);
       return;
@@ -141,13 +172,23 @@ export function Dashboard() {
     setErrorMessage(null);
     setStoppedMessage(null);
 
+    const requestSettings =
+      settings.provider === "ollama" ? resolveOllamaSettings(settings) : settings;
+    if (
+      requestSettings.customBaseUrl !== settings.customBaseUrl ||
+      requestSettings.model !== settings.model
+    ) {
+      setSettings(requestSettings);
+      saveStoredSettings(userId, requestSettings);
+    }
+
     try {
       const res = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payload,
-          settings,
+          settings: requestSettings,
           useMcpEvidence: mcp.useMcpEvidence,
           onlyServers: mcp.onlyServers,
         }),
@@ -160,8 +201,8 @@ export function Dashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Evaluation failed");
       setCurrentReport(data);
-      saveEvaluationToHistory(data);
-      setHistory(getEvaluationHistory());
+      saveEvaluationToHistory(userId, data);
+      setHistory(getEvaluationHistory(userId));
     } catch (err: unknown) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
         setErrorMessage(null);
@@ -177,14 +218,15 @@ export function Dashboard() {
     }
   };
 
-  if (!settings) return null;
+  if (!isLoaded || !userId || !settings) return null;
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 p-6 md:p-12 selection:bg-zinc-800">
       <div className="max-w-6xl mx-auto space-y-8">
         <Header
           settings={settings}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={() => openSettings("models")}
+          onOpenAccount={() => openSettings("account")}
           onNewIdea={handleNewIdea}
           showNewIdea={Boolean(currentReport)}
         />
@@ -251,17 +293,20 @@ export function Dashboard() {
               setStoppedMessage(null);
             }}
             onDelete={(id) => {
-              deleteEvaluationFromHistory(id);
-              setHistory(getEvaluationHistory());
+              deleteEvaluationFromHistory(userId, id);
+              setHistory(getEvaluationHistory(userId));
               if (currentReport?.id === id) setCurrentReport(null);
             }}
           />
         </div>
       </div>
 
+      {isSettingsOpen && (
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={settingsTab}
+        userId={userId}
         settings={settings}
         mcp={mcp}
         onSave={(updated, nextMcp) => {
@@ -269,6 +314,7 @@ export function Dashboard() {
           setMcp(nextMcp);
         }}
       />
+      )}
     </main>
   );
 }
