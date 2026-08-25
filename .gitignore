@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.turbo
+.DS_Store
+*.log
+.env
+.env.local
+apps/obsidian/main.js
+apps/obsidian/main.js.map
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
+coverage
+.pnpm-store

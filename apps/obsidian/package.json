@@ -1,0 +1,19 @@
+{
+  "name": "@rupert/obsidian",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rupert/core": "workspace:*",
+    "@rupert/mcp-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "esbuild": "^0.25.9",
+    "obsidian": "^1.8.7",
+    "typescript": "^5.9.2"
+  }
+}

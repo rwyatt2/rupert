@@ -1,0 +1,19 @@
+{
+  "name": "rupert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Adversarial idea viability and stress-testing engine",
+  "scripts": {
+    "dev": "pnpm --filter @rupert/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "web": "pnpm --filter @rupert/web dev",
+    "cli": "pnpm --filter @rupert/cli start",
+    "mcp": "pnpm --filter @rupert/mcp-server start",
+    "obsidian:build": "pnpm --filter @rupert/obsidian build"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

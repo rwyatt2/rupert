@@ -1,0 +1,9 @@
+{
+  "id": "rupert-viability",
+  "name": "Rupert Viability Engine",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.0",
+  "description": "Adversarial idea stress-testing. Writes a Markdown verdict into the vault.",
+  "author": "Rupert",
+  "isDesktopOnly": true
+}

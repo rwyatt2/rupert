@@ -1,0 +1,22 @@
+{
+  "name": "@rupert/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "rupert": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rupert/core": "workspace:*",
+    "@rupert/mcp-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
