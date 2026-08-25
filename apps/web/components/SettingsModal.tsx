@@ -139,7 +139,7 @@ function AccountTab() {
       <div className="flex justify-between gap-2 pt-2">
         <button
           type="button"
-          onClick={() => void signOut({ redirectUrl: "/sign-in" })}
+          onClick={() => void signOut({ redirectUrl: "/" })}
           className="px-4 py-2 text-xs font-mono uppercase text-zinc-400 hover:text-zinc-200"
         >
           Sign out

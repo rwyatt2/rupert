@@ -1,7 +1,9 @@
 import { Dashboard } from "@/components/Dashboard";
+import { LandingPage } from "@/components/LandingPage";
 import { auth } from "@clerk/nextjs/server";
 
 export default async function Page() {
-  await auth.protect();
+  const { userId } = await auth();
+  if (!userId) return <LandingPage />;
   return <Dashboard />;
 }

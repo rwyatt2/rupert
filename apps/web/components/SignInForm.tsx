@@ -146,7 +146,12 @@ export function SignInForm() {
   return (
     <div className="w-full max-w-sm space-y-6">
       <div className="space-y-2 text-center">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-500">Rupert</p>
+        <Link
+          href="/"
+          className="inline-block font-mono text-xs uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-300"
+        >
+          Rupert
+        </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Sign in to Rupert</h1>
         <p className="text-sm text-zinc-500">Use your email or connect a provider.</p>
       </div>

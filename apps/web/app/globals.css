@@ -24,3 +24,21 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.35s ease-out;
 }
+
+.landing-canvas {
+  background-color: #09090b;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.landing-scanline {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 3px
+  );
+  opacity: 0.35;
+}
