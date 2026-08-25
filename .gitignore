@@ -1,7 +1,9 @@
 node_modules
 dist
 .next
+.vercel
 .turbo
+*.tsbuildinfo
 .DS_Store
 *.log
 .env

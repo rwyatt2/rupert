@@ -7,6 +7,7 @@ export const googleAdapter: ProviderAdapter = {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: request.signal,
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: request.system }] },
         contents: [{ role: "user", parts: [{ text: request.user }] }],
@@ -21,7 +22,13 @@ export const googleAdapter: ProviderAdapter = {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     };
     if (!response.ok) {
-      throw new Error(data.error?.message || `Google API error (${response.status})`);
+      const message = data.error?.message || `Google API error (${response.status})`;
+      if (/high demand|try again later|resource exhausted|429|503/i.test(message) || response.status === 429 || response.status === 503) {
+        throw new Error(
+          `${message} Try gemini-3.5-flash in settings — it is usually less busy — or wait a minute and retry.`,
+        );
+      }
+      throw new Error(message);
     }
     const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("");
     if (!text) throw new Error("Google returned an empty response.");

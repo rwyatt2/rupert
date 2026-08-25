@@ -5,16 +5,30 @@ import type { EvaluationReport } from "@rupert/core";
 interface HistorySidebarProps {
   history: EvaluationReport[];
   currentId?: string;
+  onNewIdea: () => void;
   onSelect: (report: EvaluationReport) => void;
   onDelete: (id: string) => void;
 }
 
-export function HistorySidebar({ history, currentId, onSelect, onDelete }: HistorySidebarProps) {
+export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDelete }: HistorySidebarProps) {
   const latest = history[0];
   const previous = history[1];
+  const onEmptyForm = !currentId;
 
   return (
     <aside className="w-full lg:w-72 shrink-0 p-4 bg-zinc-900 border border-zinc-800 rounded-lg h-fit">
+      <button
+        type="button"
+        onClick={onNewIdea}
+        disabled={onEmptyForm}
+        className={`w-full mb-4 px-3 py-2 text-xs font-mono uppercase tracking-wider font-bold rounded transition ${
+          onEmptyForm
+            ? "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
+            : "bg-zinc-100 hover:bg-zinc-200 text-zinc-950"
+        }`}
+      >
+        New idea
+      </button>
       <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">Local history</h3>
       {latest && previous && (
         <div className="mb-4 p-3 bg-zinc-950 border border-zinc-800 rounded text-xs font-mono text-zinc-400">

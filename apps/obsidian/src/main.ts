@@ -94,7 +94,7 @@ class RupertSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("API key")
-      .setDesc("Stored in this vault's plugin data. Not uploaded.")
+      .setDesc("Stored in this vault's plugin data. Optional for local Ollama; required for Ollama Cloud.")
       .addText((text) => {
         text.inputEl.type = "password";
         text.setValue(this.plugin.settings.apiKey);
@@ -116,6 +116,7 @@ class RupertSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Ollama / custom base URL")
+      .setDesc("Local: http://127.0.0.1:11434. Ollama Cloud: https://ollama.com")
       .addText((text) => {
         text.setPlaceholder("http://127.0.0.1:11434");
         text.setValue(this.plugin.settings.customBaseUrl);

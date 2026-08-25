@@ -3,6 +3,9 @@ import { DEFAULT_SETTINGS, type EvaluationReport, type ProviderSettings } from "
 const SETTINGS_KEY = "viability_engine_settings";
 const HISTORY_KEY = "viability_engine_history";
 const MCP_KEY = "viability_engine_mcp";
+const INPUT_MODE_KEY = "viability_engine_input_mode";
+
+export type InputMode = "form" | "chat";
 
 export interface McpUiSettings {
   useMcpEvidence: boolean;
@@ -34,6 +37,17 @@ export function getMcpUiSettings(): McpUiSettings {
 export function saveMcpUiSettings(settings: McpUiSettings): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(MCP_KEY, JSON.stringify(settings));
+}
+
+export function getInputMode(): InputMode {
+  if (typeof window === "undefined") return "form";
+  const raw = localStorage.getItem(INPUT_MODE_KEY);
+  return raw === "chat" ? "chat" : "form";
+}
+
+export function saveInputMode(mode: InputMode): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(INPUT_MODE_KEY, mode);
 }
 
 export function getEvaluationHistory(): EvaluationReport[] {

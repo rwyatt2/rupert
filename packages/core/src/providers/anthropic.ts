@@ -9,6 +9,7 @@ export const anthropicAdapter: ProviderAdapter = {
         "x-api-key": settings.apiKey,
         "anthropic-version": "2023-06-01",
       },
+      signal: request.signal,
       body: JSON.stringify({
         model: settings.model,
         max_tokens: 8000,

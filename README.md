@@ -18,7 +18,22 @@ pnpm install
 pnpm web
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Set a provider and API key in the top-right. Keys stay in `localStorage` and are sent only to the local Next.js route.
+Open [http://localhost:3000](http://localhost:3000). Set a provider and API key in the top-right. Keys stay in `localStorage` and are sent only with the current evaluation request.
+
+## Host on Vercel
+
+Deploy the Next.js app in `apps/web`. No server-side API keys are required — users paste their own provider key in Settings.
+
+1. Push this repo to GitHub (the Vercel project tracks git, not uncommitted files).
+2. [Import the repo](https://vercel.com/new) on Vercel.
+3. Set **Root Directory** to `apps/web`. Leave **Include source files outside of the Root Directory** on so `@rupert/core` and `@rupert/mcp-client` are available.
+4. Framework Preset: Next.js. Node.js: 22.x.
+
+MCP evidence and local Ollama (`127.0.0.1`) are local-only. History on Vercel stays in the browser. Evaluations may run up to 5 minutes.
+
+```bash
+pnpm --filter @rupert/web build
+```
 
 CLI and MCP settings live in `~/.rupert/settings.json`. History is `~/.rupert/history/`.
 

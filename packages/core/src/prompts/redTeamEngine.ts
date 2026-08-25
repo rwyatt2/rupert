@@ -1,5 +1,5 @@
 import { DIMENSION_NAMES, DIMENSION_WEIGHTS } from "../rubric";
-import type { IdeaInput } from "../types";
+import type { ChatBrief, IdeaInput } from "../types";
 import { DIMENSION_IDS, KILL_TRIGGER_NAMES, RED_TEAM_ROLES } from "../types";
 import { formatIndustryMatrix } from "./industryMatrices";
 
@@ -58,15 +58,7 @@ ${dimensionLines}
 `;
 }
 
-export function buildUserPrompt(
-  input: IdeaInput,
-  extraEvidence?: { prior?: string; mcp?: string },
-): string {
-  const industryBlock = formatIndustryMatrix(input.industry);
-  const detail = input.industryDetail?.trim()
-    ? `\n* Industry detail: ${input.industryDetail.trim()}`
-    : "";
-
+function evidenceSection(extraEvidence?: { prior?: string; mcp?: string }): string {
   const evidenceBlocks: string[] = [];
   if (extraEvidence?.prior?.trim()) {
     evidenceBlocks.push(
@@ -78,6 +70,31 @@ export function buildUserPrompt(
       `EXTERNAL EVIDENCE FROM MCP SERVERS (unverified; may be stale, incomplete, or wrong):\n${extraEvidence.mcp.trim()}`,
     );
   }
+  return evidenceBlocks.join("\n\n");
+}
+
+const RED_TEAM_AND_KILLS = `RED TEAM SIMULATIONS TO RUN:
+1. Venture Capital Partner: Attacks TAM, defensibility, and venture-scale viability.
+2. Enterprise Buyer / CTO: Attacks compliance, procurement friction, vendor stability, and switching cost.
+3. End User / Operator: Attacks workflow disruption, habit inertia, and actual daily value.
+4. Incumbent Competitor (e.g. AWS, Microsoft, OpenAI, vertical leaders): Attacks how easily this can be bundled or commoditized.
+5. Systems Architect: Attacks technical debt, API reliability, latency, context windows, and operational overhead.
+
+KILL TRIGGERS TO EVALUATE:
+1. Thin AI Wrapper Risk: Zero moat; dead upon next LLM update.
+2. Unreachable Buyer: Economic buyer cannot be reached cost-effectively.
+3. Inverted Unit Economics: Cost to serve exceeds target price point.
+4. Platform Dependency Trap: Host platform policy or roadmap directly threatens existence.`;
+
+export function buildUserPrompt(
+  input: IdeaInput,
+  extraEvidence?: { prior?: string; mcp?: string },
+): string {
+  const industryBlock = formatIndustryMatrix(input.industry);
+  const detail = input.industryDetail?.trim()
+    ? `\n* Industry detail: ${input.industryDetail.trim()}`
+    : "";
+  const evidence = evidenceSection(extraEvidence);
 
   return `Perform an exhaustive adversarial stress test on the following idea:
 
@@ -93,20 +110,33 @@ IDEA SPECIFICATION:
 
 ${industryBlock}
 
-RED TEAM SIMULATIONS TO RUN:
-1. Venture Capital Partner: Attacks TAM, defensibility, and venture-scale viability.
-2. Enterprise Buyer / CTO: Attacks compliance, procurement friction, vendor stability, and switching cost.
-3. End User / Operator: Attacks workflow disruption, habit inertia, and actual daily value.
-4. Incumbent Competitor (e.g. AWS, Microsoft, OpenAI, vertical leaders): Attacks how easily this can be bundled or commoditized.
-5. Systems Architect: Attacks technical debt, API reliability, latency, context windows, and operational overhead.
+${RED_TEAM_AND_KILLS}
 
-KILL TRIGGERS TO EVALUATE:
-1. Thin AI Wrapper Risk: Zero moat; dead upon next LLM update.
-2. Unreachable Buyer: Economic buyer cannot be reached cost-effectively.
-3. Inverted Unit Economics: Cost to serve exceeds target price point.
-4. Platform Dependency Trap: Host platform policy or roadmap directly threatens existence.
+${evidence}
 
-${evidenceBlocks.join("\n\n")}
+Provide a complete, rigorously evaluated JSON payload matching the requested EvaluationReport schema.`;
+}
+
+export function buildChatUserPrompt(
+  brief: ChatBrief,
+  extraEvidence?: { mcp?: string },
+): string {
+  const numbered = brief.messages
+    .map((message, index) => `${index + 1}. ${message.trim()}`)
+    .join("\n\n");
+  const evidence = evidenceSection({ mcp: extraEvidence?.mcp });
+
+  return `Perform an exhaustive adversarial stress test on the following idea.
+
+CHAT BRIEF (operator did not complete the structured spec):
+Treat unspecified fields (ICP, pricing, alternatives, distribution, moat, industry) as unproven. Do not invent a complete product spec. Infer industry or type only when clearly stated; otherwise omit them from your assumptions and score the gaps harshly. Use a concise ideaName drawn only from what was stated.
+
+MESSAGES:
+${numbered}
+
+${RED_TEAM_AND_KILLS}
+
+${evidence}
 
 Provide a complete, rigorously evaluated JSON payload matching the requested EvaluationReport schema.`;
 }

@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { saveReport } from "./history";
-import { buildSystemPrompt, buildUserPrompt } from "./prompts/redTeamEngine";
+import { buildChatUserPrompt, buildSystemPrompt, buildUserPrompt } from "./prompts/redTeamEngine";
 import { extractJson, getAdapter } from "./providers/index";
 import { reconcileReport } from "./reconcile";
 import {
+  ChatBriefSchema,
   EvaluationReportSchema,
   IdeaInputSchema,
   ProviderSettingsSchema,
+  type ChatBrief,
+  type EvidenceSubject,
   type EvidenceUsed,
   type EvaluationReport,
   type IdeaInput,
@@ -14,10 +17,26 @@ import {
 } from "./types";
 
 export interface EvaluateOptions {
-  idea: IdeaInput;
+  idea?: IdeaInput;
+  brief?: ChatBrief;
   settings: ProviderSettings;
   persist?: boolean;
-  gatherEvidence?: (idea: IdeaInput) => Promise<EvidenceUsed>;
+  gatherEvidence?: (subject: EvidenceSubject, signal?: AbortSignal) => Promise<EvidenceUsed>;
+  signal?: AbortSignal;
+}
+
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function abortError(): Error {
+  const error = new Error("Evaluation cancelled");
+  error.name = "AbortError";
+  return error;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortError();
 }
 
 function requireKey(settings: ProviderSettings): void {
@@ -30,22 +49,48 @@ async function completeJson(
   settings: ProviderSettings,
   system: string,
   user: string,
+  signal?: AbortSignal,
 ): Promise<unknown> {
+  throwIfAborted(signal);
   const adapter = getAdapter(settings.provider);
-  const raw = await adapter.complete(settings, { system, user, jsonMode: true });
+  const raw = await adapter.complete(settings, { system, user, jsonMode: true, signal });
   return extractJson(raw);
 }
 
+function resolveSubject(options: EvaluateOptions): {
+  idea?: IdeaInput;
+  brief?: ChatBrief;
+  subject: EvidenceSubject;
+  fallbackName: string;
+} {
+  const idea = options.idea ? IdeaInputSchema.parse(options.idea) : undefined;
+  const brief = options.brief ? ChatBriefSchema.parse(options.brief) : undefined;
+  if (!idea && !brief) {
+    throw new Error("Provide either idea or brief");
+  }
+  if (idea) {
+    return { idea, brief, subject: { kind: "idea", idea }, fallbackName: idea.name.trim() };
+  }
+  return {
+    idea,
+    brief,
+    subject: { kind: "brief", messages: brief!.messages },
+    fallbackName: "",
+  };
+}
+
 export async function evaluateIdea(options: EvaluateOptions): Promise<EvaluationReport> {
-  const idea = IdeaInputSchema.parse(options.idea);
+  const { idea, brief, subject, fallbackName } = resolveSubject(options);
   const settings = ProviderSettingsSchema.parse(options.settings);
   requireKey(settings);
 
   let evidenceUsed: EvidenceUsed | undefined;
   if (options.gatherEvidence) {
     try {
-      evidenceUsed = await options.gatherEvidence(idea);
+      throwIfAborted(options.signal);
+      evidenceUsed = await options.gatherEvidence(subject, options.signal);
     } catch (error) {
+      if (isAbortError(error)) throw error;
       evidenceUsed = {
         servers: [],
         notes: "",
@@ -57,15 +102,20 @@ export async function evaluateIdea(options: EvaluateOptions): Promise<Evaluation
   }
 
   const system = buildSystemPrompt();
-  const user = buildUserPrompt(idea, {
-    prior: idea.priorEvidence,
-    mcp: evidenceUsed?.notes,
-  });
+  const user = idea
+    ? buildUserPrompt(idea, {
+        prior: idea.priorEvidence,
+        mcp: evidenceUsed?.notes,
+      })
+    : buildChatUserPrompt(brief!, { mcp: evidenceUsed?.notes });
+
+  throwIfAborted(options.signal);
 
   let parsed: unknown;
   try {
-    parsed = await completeJson(settings, system, user);
+    parsed = await completeJson(settings, system, user, options.signal);
   } catch (error) {
+    if (isAbortError(error)) throw error;
     throw new Error(
       `Provider call failed: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -73,39 +123,49 @@ export async function evaluateIdea(options: EvaluateOptions): Promise<Evaluation
 
   let report: EvaluationReport;
   try {
-    const withIds = hydrateMeta(parsed, idea.name);
+    const withIds = hydrateMeta(parsed, fallbackName);
     report = EvaluationReportSchema.parse(withIds);
   } catch (firstError) {
+    if (isAbortError(firstError)) throw firstError;
     try {
       parsed = await completeJson(
         settings,
         system,
         `Your previous JSON failed schema validation:\n${firstError instanceof Error ? firstError.message : String(firstError)}\n\nReturn ONLY corrected JSON matching the required EvaluationReport schema. No markdown.`,
+        options.signal,
       );
-      const withIds = hydrateMeta(parsed, idea.name);
+      const withIds = hydrateMeta(parsed, fallbackName);
       report = EvaluationReportSchema.parse(withIds);
     } catch (repairError) {
+      if (isAbortError(repairError)) throw repairError;
       throw new Error(
         `Model output failed validation after repair: ${repairError instanceof Error ? repairError.message : String(repairError)}`,
       );
     }
   }
 
-  const reconciled = reconcileReport(report, idea.name);
+  const reconciled = reconcileReport(report, report.ideaName);
   if (evidenceUsed) {
     reconciled.evidenceUsed = evidenceUsed;
   }
 
   if (options.persist !== false) {
-    await saveReport(reconciled);
+    try {
+      await saveReport(reconciled);
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      // Disk history is best-effort; serverless hosts often have a read-only FS.
+    }
   }
 
   return reconciled;
 }
 
-function hydrateMeta(parsed: unknown, ideaName: string): unknown {
+function hydrateMeta(parsed: unknown, fallbackName: string): unknown {
   if (!parsed || typeof parsed !== "object") return parsed;
   const obj = parsed as Record<string, unknown>;
+  const fromModel = typeof obj.ideaName === "string" ? obj.ideaName.trim() : "";
+  const ideaName = fallbackName || fromModel || "Untitled idea";
   return {
     ...obj,
     id: typeof obj.id === "string" && obj.id ? obj.id : `eval_${randomUUID()}`,

@@ -1,30 +1,62 @@
 "use client";
 
 import { IDEA_TYPES, INDUSTRIES, type IdeaInput } from "@rupert/core";
-import { useState } from "react";
+import { RunStatusBar } from "@/components/RunStatusBar";
+import { useEffect, useState } from "react";
+
+type IdeaFormState = Omit<IdeaInput, "industry" | "ideaType"> & {
+  industry: IdeaInput["industry"] | "";
+  ideaType: IdeaInput["ideaType"] | "";
+};
 
 interface IdeaFormProps {
   onSubmit: (idea: IdeaInput) => void;
+  onCancel?: () => void;
   isLoading: boolean;
+  initialIdea?: IdeaInput | null;
+  prefillNonce?: number;
+}
+
+const EMPTY_FORM: IdeaFormState = {
+  name: "",
+  industry: "",
+  ideaType: "",
+  targetCustomer: "",
+  problemStatement: "",
+  proposedSolution: "",
+  monetizationModel: "",
+  existingAlternatives: "",
+  industryDetail: "",
+  priorEvidence: "",
+};
+
+function toFormState(idea: IdeaInput | null | undefined): IdeaFormState {
+  if (!idea) return EMPTY_FORM;
+  return {
+    ...idea,
+    industryDetail: idea.industryDetail || "",
+    priorEvidence: idea.priorEvidence || "",
+  };
 }
 
 const fieldClass =
   "w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500";
 const labelClass = "block text-xs font-mono uppercase text-zinc-400 mb-1";
 
-export function IdeaForm({ onSubmit, isLoading }: IdeaFormProps) {
-  const [formData, setFormData] = useState<IdeaInput>({
-    name: "",
-    industry: "Developer Tools",
-    ideaType: "B2B SaaS",
-    targetCustomer: "",
-    problemStatement: "",
-    proposedSolution: "",
-    monetizationModel: "",
-    existingAlternatives: "",
-    industryDetail: "",
-    priorEvidence: "",
-  });
+export function IdeaForm({
+  onSubmit,
+  onCancel,
+  isLoading,
+  initialIdea,
+  prefillNonce = 0,
+}: IdeaFormProps) {
+  const [formData, setFormData] = useState<IdeaFormState>(toFormState(initialIdea));
+
+  useEffect(() => {
+    setFormData(toFormState(initialIdea));
+    // Prefill only when a new file is attached or removed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillNonce]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -36,9 +68,11 @@ export function IdeaForm({ onSubmit, isLoading }: IdeaFormProps) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(formData);
+        if (isLoading) return;
+        if (!formData.industry || !formData.ideaType) return;
+        onSubmit({ ...formData, industry: formData.industry, ideaType: formData.ideaType });
       }}
-      className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-6 max-w-3xl mx-auto"
+      className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-6"
     >
       <div>
         <h2 className="text-xl font-bold text-zinc-100">Submit idea for red-teaming</h2>
@@ -54,7 +88,10 @@ export function IdeaForm({ onSubmit, isLoading }: IdeaFormProps) {
         </div>
         <div>
           <label className={labelClass}>Industry</label>
-          <select name="industry" value={formData.industry} onChange={handleChange} className={fieldClass}>
+          <select required name="industry" value={formData.industry} onChange={handleChange} className={fieldClass}>
+            <option value="" disabled>
+              Select industry
+            </option>
             {INDUSTRIES.map((industry) => (
               <option key={industry} value={industry}>
                 {industry}
@@ -67,7 +104,10 @@ export function IdeaForm({ onSubmit, isLoading }: IdeaFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Category / type</label>
-          <select name="ideaType" value={formData.ideaType} onChange={handleChange} className={fieldClass}>
+          <select required name="ideaType" value={formData.ideaType} onChange={handleChange} className={fieldClass}>
+            <option value="" disabled>
+              Select category
+            </option>
             {IDEA_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -159,13 +199,16 @@ export function IdeaForm({ onSubmit, isLoading }: IdeaFormProps) {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition disabled:opacity-50"
-      >
-        {isLoading ? "Running adversarial simulation..." : "Execute stress test"}
-      </button>
+      {isLoading ? (
+        <RunStatusBar onCancel={onCancel} />
+      ) : (
+        <button
+          type="submit"
+          className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
+        >
+          Execute stress test
+        </button>
+      )}
     </form>
   );
 }

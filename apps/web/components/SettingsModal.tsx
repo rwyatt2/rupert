@@ -1,6 +1,13 @@
 "use client";
 
-import { AI_PROVIDERS, DEFAULT_MODELS, type AIProvider, type ProviderSettings } from "@rupert/core";
+import {
+  AI_PROVIDERS,
+  DEFAULT_MODELS,
+  GOOGLE_MODEL_OPTIONS,
+  OLLAMA_BASE_OPTIONS,
+  type AIProvider,
+  type ProviderSettings,
+} from "@rupert/core";
 import { useEffect, useState } from "react";
 import { saveMcpUiSettings, saveStoredSettings, type McpUiSettings } from "@/lib/storage";
 
@@ -11,6 +18,8 @@ interface SettingsModalProps {
   mcp: McpUiSettings;
   onSave: (settings: ProviderSettings, mcp: McpUiSettings) => void;
 }
+
+const hosted = Boolean(process.env.NEXT_PUBLIC_VERCEL_ENV);
 
 export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState(settings);
@@ -70,23 +79,27 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
           </div>
         </div>
 
-        {localSettings.provider !== "ollama" && (
-          <div>
-            <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
-              API key (stored in this browser only)
-            </label>
-            <input
-              type="password"
-              placeholder="sk-..."
-              value={localSettings.apiKey}
-              onChange={(e) => setLocalSettings({ ...localSettings, apiKey: e.target.value })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
-            />
-            <p className="text-[10px] text-zinc-500 mt-1">
-              Sent only to the local Next.js route for the current request. Never written to a remote store.
-            </p>
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
+            {localSettings.provider === "ollama"
+              ? "API key (optional for local, required for cloud)"
+              : "API key (stored in this browser only)"}
+          </label>
+          <input
+            type="password"
+            placeholder={localSettings.provider === "ollama" ? "Ollama Cloud key" : "sk-..."}
+            value={localSettings.apiKey}
+            onChange={(e) => setLocalSettings({ ...localSettings, apiKey: e.target.value })}
+            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+          />
+          <p className="text-[10px] text-zinc-500 mt-1">
+            {localSettings.provider === "ollama"
+              ? hosted
+                ? "Local Ollama is not reachable from this hosted app. Use Ollama Cloud or another provider."
+                : "Local Ollama does not need a key. Cloud keys come from ollama.com/settings/keys."
+              : "Stored in this browser. Sent only with the current evaluation request — never written to a remote store."}
+          </p>
+        </div>
 
         <div>
           <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Model identifier</label>
@@ -96,6 +109,24 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
             onChange={(e) => setLocalSettings({ ...localSettings, model: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
           />
+          {localSettings.provider === "google" && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {GOOGLE_MODEL_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setLocalSettings({ ...localSettings, model: option.id })}
+                  className={`px-2 py-1 text-[10px] font-mono rounded border ${
+                    localSettings.model === option.id
+                      ? "bg-zinc-800 border-zinc-600 text-zinc-100"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {localSettings.provider === "ollama" && (
@@ -108,39 +139,71 @@ export function SettingsModal({ isOpen, onClose, settings, mcp, onSave }: Settin
               onChange={(e) => setLocalSettings({ ...localSettings, customBaseUrl: e.target.value })}
               className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
             />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {OLLAMA_BASE_OPTIONS.map((option) => {
+                const current = localSettings.customBaseUrl || "http://127.0.0.1:11434";
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setLocalSettings({ ...localSettings, customBaseUrl: option.id })}
+                    className={`px-2 py-1 text-[10px] font-mono rounded border ${
+                      current === option.id
+                        ? "bg-zinc-800 border-zinc-600 text-zinc-100"
+                        : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              {hosted
+                ? "Use https://ollama.com. A local 127.0.0.1 URL will not work on this host."
+                : "Local is http://127.0.0.1:11434. Cloud is https://ollama.com — not the /api path from the docs."}
+            </p>
           </div>
         )}
 
         <div className="border-t border-zinc-800 pt-4 space-y-3">
           <h4 className="text-xs font-mono uppercase text-zinc-400">MCP evidence (optional)</h4>
-          <label className="flex items-start gap-2 text-xs text-zinc-300">
-            <input
-              type="checkbox"
-              checked={localMcp.useMcpEvidence}
-              onChange={(e) => setLocalMcp({ ...localMcp, useMcpEvidence: e.target.checked })}
-              className="mt-0.5"
-            />
-            Query servers in ~/.rupert/mcp.json before scoring. Off by default. Fail-open if a server is down.
-          </label>
-          <div>
-            <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
-              Only these server names (comma-separated, blank = all enabled)
-            </label>
-            <input
-              type="text"
-              value={localMcp.onlyServers.join(", ")}
-              onChange={(e) =>
-                setLocalMcp({
-                  ...localMcp,
-                  onlyServers: e.target.value
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
-            />
-          </div>
+          {hosted ? (
+            <p className="text-[10px] text-zinc-500">
+              MCP evidence needs local stdio servers in ~/.rupert/mcp.json, which are not available on this host.
+            </p>
+          ) : (
+            <>
+              <label className="flex items-start gap-2 text-xs text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={localMcp.useMcpEvidence}
+                  onChange={(e) => setLocalMcp({ ...localMcp, useMcpEvidence: e.target.checked })}
+                  className="mt-0.5"
+                />
+                Query servers in ~/.rupert/mcp.json before scoring. Off by default. Fail-open if a server is down.
+              </label>
+              <div>
+                <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
+                  Only these server names (comma-separated, blank = all enabled)
+                </label>
+                <input
+                  type="text"
+                  value={localMcp.onlyServers.join(", ")}
+                  onChange={(e) =>
+                    setLocalMcp({
+                      ...localMcp,
+                      onlyServers: e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">

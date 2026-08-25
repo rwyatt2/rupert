@@ -86,6 +86,15 @@ export const IdeaInputSchema = z.object({
 });
 export type IdeaInput = z.infer<typeof IdeaInputSchema>;
 
+export const ChatBriefSchema = z.object({
+  messages: z.array(z.string().min(1)).min(1),
+});
+export type ChatBrief = z.infer<typeof ChatBriefSchema>;
+
+export type EvidenceSubject =
+  | { kind: "idea"; idea: IdeaInput }
+  | { kind: "brief"; messages: string[] };
+
 export const DimensionScoreSchema = z.object({
   id: z.enum(DIMENSION_IDS),
   name: z.string(),
@@ -185,11 +194,22 @@ export const EvaluationReportSchema = z
   });
 export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
 
-export const EvaluateRequestSchema = z.object({
-  idea: IdeaInputSchema,
-  settings: ProviderSettingsSchema,
-  useMcpEvidence: z.boolean().optional().default(false),
-  onlyServers: z.array(z.string()).optional(),
-  persist: z.boolean().optional().default(true),
-});
+export const EvaluateRequestSchema = z
+  .object({
+    idea: IdeaInputSchema.optional(),
+    brief: ChatBriefSchema.optional(),
+    settings: ProviderSettingsSchema,
+    useMcpEvidence: z.boolean().optional().default(false),
+    onlyServers: z.array(z.string()).optional(),
+    persist: z.boolean().optional().default(true),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.idea && !data.brief) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide either idea or brief",
+        path: ["idea"],
+      });
+    }
+  });
 export type EvaluateRequest = z.infer<typeof EvaluateRequestSchema>;

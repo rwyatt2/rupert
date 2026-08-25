@@ -14,6 +14,7 @@ async function completeOpenAICompat(
       Authorization: `Bearer ${settings.apiKey}`,
       ...extraHeaders,
     },
+    signal: request.signal,
     body: JSON.stringify({
       model: settings.model,
       response_format: { type: "json_object" },

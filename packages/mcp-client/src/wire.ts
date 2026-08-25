@@ -1,10 +1,10 @@
-import type { EvidenceUsed, IdeaInput } from "@rupert/core";
+import type { EvidenceSubject, EvidenceUsed } from "@rupert/core";
 import { gatherMcpEvidence } from "./gather";
 
 export function makeEvidenceGatherer(
   enabled: boolean,
   onlyServers?: string[],
-): ((idea: IdeaInput) => Promise<EvidenceUsed>) | undefined {
+): ((subject: EvidenceSubject, signal?: AbortSignal) => Promise<EvidenceUsed>) | undefined {
   if (!enabled) return undefined;
-  return (idea) => gatherMcpEvidence(idea, { onlyServers });
+  return (subject, signal) => gatherMcpEvidence(subject, { onlyServers, signal });
 }

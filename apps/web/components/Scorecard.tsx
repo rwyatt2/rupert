@@ -70,7 +70,7 @@ export function Scorecard({ report, onReset }: ScorecardProps) {
           <button
             type="button"
             onClick={onReset}
-            className="px-4 py-2 text-xs font-mono uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded"
+            className="px-4 py-2 text-xs font-mono uppercase tracking-wider font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-950 rounded"
           >
             New idea
           </button>
@@ -137,6 +137,14 @@ export function Scorecard({ report, onReset }: ScorecardProps) {
           )}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={onReset}
+        className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
+      >
+        New idea
+      </button>
     </div>
   );
 }
