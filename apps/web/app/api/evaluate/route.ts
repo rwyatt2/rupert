@@ -1,4 +1,5 @@
 import { evaluateIdea, EvaluateRequestSchema, isAbortError } from "@rupert/core/node";
+import { clerkKeyStatus } from "@/lib/clerk-env";
 import { auth } from "@clerk/nextjs/server";
 import { makeEvidenceGatherer } from "@rupert/mcp-client";
 import { NextRequest, NextResponse } from "next/server";
@@ -7,7 +8,16 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  if (!clerkKeyStatus().configured) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
