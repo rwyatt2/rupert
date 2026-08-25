@@ -1,27 +1,16 @@
-"use client";
+import { clerkKeyStatus } from "@/lib/clerk-env";
+import { SsoCallbackClient } from "./sso-callback-client";
 
-import { HandleSSOCallback } from "@clerk/react";
-import { useRouter } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 export default function SsoCallbackPage() {
-  const router = useRouter();
+  if (!clerkKeyStatus().hasPublishableKey) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-center text-sm text-zinc-400">
+        Sign-in is not configured on this host.
+      </main>
+    );
+  }
 
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 text-sm text-zinc-400">
-      <HandleSSOCallback
-        navigateToApp={({ session, decorateUrl }) => {
-          if (session?.currentTask) return;
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-            return;
-          }
-          router.push(url);
-        }}
-        navigateToSignIn={() => router.push("/sign-in")}
-        navigateToSignUp={() => router.push("/sign-in")}
-      />
-      <p>Finishing sign in…</p>
-    </main>
-  );
+  return <SsoCallbackClient />;
 }

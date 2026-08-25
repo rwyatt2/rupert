@@ -1,6 +1,8 @@
 import { SignInForm } from "@/components/SignInForm";
 import { clerkKeyStatus } from "@/lib/clerk-env";
 
+export const dynamic = "force-dynamic";
+
 export default function SignInPage() {
   const keys = clerkKeyStatus();
   return (
