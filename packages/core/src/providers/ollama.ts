@@ -1,7 +1,11 @@
+import {
+  DEFAULT_MODELS,
+  DEFAULT_OLLAMA_CLOUD_MODEL,
+  OLLAMA_CLOUD_URL,
+  OLLAMA_LOCAL_URL,
+} from "../defaults";
 import type { ProviderSettings } from "../types";
 import type { ProviderAdapter } from "./types";
-
-const LOCAL_OLLAMA = "http://127.0.0.1:11434";
 
 export function isOllamaCloud(baseUrl?: string): boolean {
   try {
@@ -12,12 +16,44 @@ export function isOllamaCloud(baseUrl?: string): boolean {
   }
 }
 
+export function isLocalOllama(baseUrl?: string): boolean {
+  if (!baseUrl?.trim()) return true;
+  try {
+    const host = new URL(normalizeOllamaInput(baseUrl)).hostname;
+    return host === "127.0.0.1" || host === "localhost";
+  } catch {
+    return /127\.0\.0\.1|localhost/i.test(baseUrl);
+  }
+}
+
+function isLocalDefaultModel(model: string): boolean {
+  const name = model.trim().toLowerCase();
+  return name === DEFAULT_MODELS.ollama || name === `${DEFAULT_MODELS.ollama}:latest`;
+}
+
+export function resolveOllamaSettings(settings: ProviderSettings): ProviderSettings {
+  if (settings.provider !== "ollama") return settings;
+  const apiKey = settings.apiKey.trim();
+  let customBaseUrl = settings.customBaseUrl;
+  let model = settings.model;
+
+  if (apiKey && isLocalOllama(customBaseUrl)) {
+    customBaseUrl = OLLAMA_CLOUD_URL;
+  }
+
+  if (isOllamaCloud(customBaseUrl) && isLocalDefaultModel(model)) {
+    model = DEFAULT_OLLAMA_CLOUD_MODEL;
+  }
+
+  return { ...settings, apiKey, customBaseUrl, model };
+}
+
 function looksLikeApiKey(value: string): boolean {
   return value.length >= 20 && !value.includes(".") && !value.includes("/") && !value.includes(":");
 }
 
 function normalizeOllamaInput(raw?: string): string {
-  let input = (raw || LOCAL_OLLAMA).trim() || LOCAL_OLLAMA;
+  let input = (raw || OLLAMA_LOCAL_URL).trim() || OLLAMA_LOCAL_URL;
   if (!/^https?:\/\//i.test(input)) {
     if (looksLikeApiKey(input)) {
       throw new Error(
@@ -75,7 +111,7 @@ function describeFetchFailure(error: unknown, target: string): Error {
   if (/ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT/i.test(joined)) {
     if (local) {
       return new Error(
-        `Could not reach local Ollama at ${target}. Start the Ollama app (or \`ollama serve\`), or switch the base URL to https://ollama.com and paste an API key from ollama.com/settings/keys.`,
+        `Could not reach local Ollama at ${target}. Start the Ollama app (or \`ollama serve\`), or paste an API key from ollama.com/settings/keys to use Ollama Cloud.`,
       );
     }
     return new Error(`Could not reach Ollama at ${target}. Check the base URL.`);
@@ -85,11 +121,18 @@ function describeFetchFailure(error: unknown, target: string): Error {
   return new Error(`Ollama request to ${target} failed: ${detail}`);
 }
 
+function contentText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return JSON.stringify(value);
+}
+
 export const ollamaAdapter: ProviderAdapter = {
   async complete(settings, request) {
-    const { url, openaiCompat } = resolveChatUrl(settings.customBaseUrl);
+    const resolved = resolveOllamaSettings(settings);
+    const { url, openaiCompat } = resolveChatUrl(resolved.customBaseUrl);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const apiKey = settings.apiKey.trim();
+    const apiKey = resolved.apiKey;
     if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
     let response: Response;
@@ -101,7 +144,7 @@ export const ollamaAdapter: ProviderAdapter = {
         body: JSON.stringify(
           openaiCompat
             ? {
-                model: settings.model,
+                model: resolved.model,
                 response_format: { type: "json_object" },
                 messages: [
                   { role: "system", content: request.system },
@@ -109,9 +152,10 @@ export const ollamaAdapter: ProviderAdapter = {
                 ],
               }
             : {
-                model: settings.model,
+                model: resolved.model,
                 stream: false,
                 format: "json",
+                ...(isOllamaCloud(resolved.customBaseUrl) ? { think: false } : {}),
                 messages: [
                   { role: "system", content: request.system },
                   { role: "user", content: request.user },
@@ -126,9 +170,9 @@ export const ollamaAdapter: ProviderAdapter = {
 
     let data: {
       error?: string | { message?: string };
-      message?: { content?: string };
-      response?: string;
-      choices?: Array<{ message?: { content?: string } }>;
+      message?: { content?: unknown };
+      response?: unknown;
+      choices?: Array<{ message?: { content?: unknown } }>;
     };
     try {
       data = (await response.json()) as typeof data;
@@ -139,17 +183,27 @@ export const ollamaAdapter: ProviderAdapter = {
     if (!response.ok) {
       const message =
         typeof data.error === "string" ? data.error : data.error?.message || `Ollama API error (${response.status})`;
-      if (/not found/i.test(message)) {
+      if (response.status === 401 || response.status === 403) {
         throw new Error(
-          `${message} Pull it with \`ollama pull ${settings.model}\`, or switch the base URL to https://ollama.com and use an Ollama Cloud API key.`,
+          `Ollama Cloud rejected the API key (${response.status}). Create a key at ollama.com/settings/keys and paste it in Settings.`,
+        );
+      }
+      if (/not found/i.test(message)) {
+        if (isOllamaCloud(resolved.customBaseUrl)) {
+          throw new Error(
+            `${message} "${resolved.model}" is not available on Ollama Cloud. Use ${DEFAULT_OLLAMA_CLOUD_MODEL}, gemma4:31b, or another model from ollama.com/search?c=cloud.`,
+          );
+        }
+        throw new Error(
+          `${message} Pull it with \`ollama pull ${resolved.model}\`, or paste an Ollama Cloud API key to use ${DEFAULT_OLLAMA_CLOUD_MODEL}.`,
         );
       }
       throw new Error(message);
     }
 
     const text = openaiCompat
-      ? data.choices?.[0]?.message?.content
-      : data.message?.content || data.response;
+      ? contentText(data.choices?.[0]?.message?.content)
+      : contentText(data.message?.content) || contentText(data.response);
     if (!text) throw new Error("Ollama returned an empty response.");
     return text;
   },

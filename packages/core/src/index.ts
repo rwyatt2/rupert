@@ -4,7 +4,7 @@ export * from "./export";
 export * from "./defaults";
 export { classifyIdeaSource, parseIdeaMarkdown } from "./ingest";
 export type { ClassifiedIdeaSource } from "./ingest";
-export { isOllamaCloud } from "./providers/ollama";
+export { isOllamaCloud, resolveOllamaSettings } from "./providers/ollama";
 export { formatIndustryMatrix, getIndustryMatrix, INDUSTRY_MATRICES } from "./prompts/industryMatrices";
 export { buildChatUserPrompt, buildSystemPrompt, buildUserPrompt } from "./prompts/redTeamEngine";
 export { reconcileReport } from "./reconcile";

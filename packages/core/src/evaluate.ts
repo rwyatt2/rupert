@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { saveReport } from "./history";
 import { buildChatUserPrompt, buildSystemPrompt, buildUserPrompt } from "./prompts/redTeamEngine";
 import { extractJson, getAdapter } from "./providers/index";
+import { isOllamaCloud, resolveOllamaSettings } from "./providers/ollama";
 import { reconcileReport } from "./reconcile";
 import {
   ChatBriefSchema,
@@ -40,7 +41,14 @@ function throwIfAborted(signal?: AbortSignal): void {
 }
 
 function requireKey(settings: ProviderSettings): void {
-  if (settings.provider !== "ollama" && !settings.apiKey.trim()) {
+  if (settings.provider === "ollama") {
+    const resolved = resolveOllamaSettings(settings);
+    if (isOllamaCloud(resolved.customBaseUrl) && !resolved.apiKey.trim()) {
+      throw new Error("Ollama Cloud requires an API key from ollama.com/settings/keys.");
+    }
+    return;
+  }
+  if (!settings.apiKey.trim()) {
     throw new Error("Missing API key for selected provider.");
   }
 }
