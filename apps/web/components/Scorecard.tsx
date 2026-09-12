@@ -1,7 +1,12 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { downloadFilename, toJson, toMarkdown, type EvaluationReport } from "@rupert/core";
 import { downloadText } from "@/lib/storage";
+import { scoreBarClass, scoreTextClass, verdictBadgeClass } from "@/lib/score-colors";
+import { cn } from "@/lib/utils";
 import { KillTriggers } from "./KillTriggers";
 import { NextSteps } from "./NextSteps";
 import { RedTeamTabs } from "./RedTeamTabs";
@@ -11,140 +16,117 @@ interface ScorecardProps {
   onReset: () => void;
 }
 
-function verdictStyle(verdict: EvaluationReport["verdict"]) {
-  switch (verdict) {
-    case "GO":
-      return "bg-emerald-950 border-emerald-500 text-emerald-400";
-    case "CONDITIONAL_PIVOT":
-      return "bg-amber-950 border-amber-500 text-amber-400";
-    case "HARD_NO_GO":
-      return "bg-rose-950 border-rose-600 text-rose-400";
-  }
-}
-
-function scoreColor(score: number) {
-  if (score >= 8) return "text-emerald-400";
-  if (score >= 6) return "text-amber-400";
-  return "text-rose-400";
-}
-
 export function Scorecard({ report, onReset }: ScorecardProps) {
   return (
-    <div className="space-y-8 animate-fadeIn">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
+    <div className="animate-fadeIn space-y-8">
+      <Card className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-2xl font-bold text-zinc-100">{report.ideaName}</h2>
-            <span
-              className={`px-3 py-1 rounded text-xs font-mono font-bold tracking-wider border ${verdictStyle(report.verdict)}`}
-            >
+          <div className="flex flex-wrap items-center gap-4">
+            <h2 className="h2">{report.ideaName}</h2>
+            <Badge className={cn("border", verdictBadgeClass(report.verdict))}>
               {report.verdict.replaceAll("_", " ")}
-            </span>
+            </Badge>
           </div>
-          <p className="mt-2 text-sm text-zinc-400 max-w-2xl">{report.summaryVerdict}</p>
+          <p className="description mt-4 max-w-2xl text-muted-foreground">{report.summaryVerdict}</p>
         </div>
-        <div className="flex items-center gap-4 self-end md:self-auto flex-wrap">
+        <div className="flex flex-wrap items-center gap-4 self-end md:self-auto">
           <div className="text-right">
-            <span className="block text-xs uppercase tracking-widest text-zinc-500 font-mono">
-              Composite score
-            </span>
-            <span className={`text-4xl font-extrabold font-mono ${scoreColor(report.compositeScore / 10)}`}>
+            <span className="caption-mono block text-muted-foreground">Composite score</span>
+            <span className={cn("font-mono text-4xl font-extrabold", scoreTextClass(report.compositeScore / 10))}>
               {report.compositeScore}
-              <span className="text-lg text-zinc-600">/100</span>
+              <span className="text-lg text-muted-foreground">/100</span>
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => downloadText(downloadFilename(report, "md"), toMarkdown(report), "text/markdown")}
-            className="px-3 py-2 text-xs font-mono uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded"
           >
             Export MD
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => downloadText(downloadFilename(report, "json"), toJson(report), "application/json")}
-            className="px-3 py-2 text-xs font-mono uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded"
           >
             Export JSON
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="px-4 py-2 text-xs font-mono uppercase tracking-wider font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-950 rounded"
-          >
+          </Button>
+          <Button type="button" size="sm" onClick={onReset}>
             New idea
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <KillTriggers fatalFlaws={report.fatalFlaws} killTriggers={report.killTriggers} />
 
-      <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
-        <h3 className="text-sm font-mono uppercase tracking-wider text-zinc-400 mb-6 pb-2 border-b border-zinc-800">
+      <Card>
+        <h3 className="caption-mono mb-6 border-b border-border pb-4 text-muted-foreground">
           7-dimension stress test matrix
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {report.dimensionScores.map((dim) => (
-            <div key={dim.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded">
-              <div className="flex justify-between items-center mb-2">
+            <div key={dim.id} className="rounded-md border border-border bg-background p-4">
+              <div className="mb-2 flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-semibold text-zinc-200">{dim.name}</span>
-                  <span className="ml-2 text-xs font-mono text-zinc-500">
+                  <span className="h5 text-foreground">{dim.name}</span>
+                  <span className="caption-mono ml-2 text-muted-foreground">
                     ({Math.round(dim.weight * 100)}% wt)
                   </span>
                 </div>
-                <span className={`text-lg font-mono font-bold ${scoreColor(dim.score)}`}>{dim.score}/10</span>
+                <span className={cn("font-mono text-lg font-bold", scoreTextClass(dim.score))}>
+                  {dim.score}/10
+                </span>
               </div>
-              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden mb-3">
+              <div className="mb-4 h-2 overflow-hidden rounded-full bg-secondary">
                 <div
-                  className={`h-full ${dim.score >= 8 ? "bg-emerald-500" : dim.score >= 6 ? "bg-amber-500" : "bg-rose-500"}`}
+                  className={cn("h-full", scoreBarClass(dim.score))}
                   style={{ width: `${dim.score * 10}%` }}
+                  role="progressbar"
+                  aria-valuenow={dim.score}
+                  aria-valuemin={0}
+                  aria-valuemax={10}
                 />
               </div>
-              <p className="text-xs text-zinc-400 mb-2">{dim.justification}</p>
-              <div className="text-xs text-rose-400/90 font-mono bg-rose-950/20 p-2 border border-rose-950 rounded">
+              <p className="description mb-4 text-muted-foreground">{dim.justification}</p>
+              <div className="description rounded-md border border-destructive/20 bg-destructive/5 p-2 font-mono text-destructive">
                 Risk: {dim.primaryRisk}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       <RedTeamTabs critiques={report.redTeamCritiques} />
 
-      <div className="p-6 bg-zinc-900 border border-amber-900/50 rounded-lg">
-        <h3 className="text-sm font-mono uppercase tracking-wider text-amber-500 mb-2">
-          The only way this works
-        </h3>
-        <p className="text-sm text-zinc-300 leading-relaxed">{report.onlyWayThisWorks}</p>
-      </div>
+      <Card className="border-warning/40">
+        <h3 className="caption-mono mb-2 text-warning">The only way this works</h3>
+        <p className="description text-foreground/90">{report.onlyWayThisWorks}</p>
+      </Card>
 
       <NextSteps gates={report.validationGates} />
 
       {report.evidenceUsed && (
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
-          <h3 className="text-sm font-mono uppercase tracking-wider text-zinc-400 mb-2">Evidence pass</h3>
-          <p className="text-xs font-mono text-zinc-500 mb-2">
+        <Card>
+          <h3 className="caption-mono mb-2 text-muted-foreground">Evidence pass</h3>
+          <p className="caption-mono mb-2 text-muted-foreground">
             Servers: {report.evidenceUsed.servers.join(", ") || "none"}
           </p>
           {report.evidenceUsed.gaps.length > 0 && (
-            <p className="text-xs text-amber-400 mb-2">Gaps: {report.evidenceUsed.gaps.join("; ")}</p>
+            <p className="description mb-2 text-warning">Gaps: {report.evidenceUsed.gaps.join("; ")}</p>
           )}
           {report.evidenceUsed.notes && (
-            <pre className="text-xs text-zinc-400 whitespace-pre-wrap font-mono bg-zinc-950 p-3 rounded border border-zinc-800 max-h-64 overflow-auto">
+            <pre className="description max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-background p-4 font-mono text-muted-foreground">
               {report.evidenceUsed.notes}
             </pre>
           )}
-        </div>
+        </Card>
       )}
 
-      <button
-        type="button"
-        onClick={onReset}
-        className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
-      >
+      <Button type="button" size="lg" onClick={onReset}>
         New idea
-      </button>
+      </Button>
     </div>
   );
 }

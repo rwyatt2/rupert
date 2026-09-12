@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import type { InputMode } from "@/lib/storage";
 
 interface ModeToggleProps {
@@ -8,32 +9,27 @@ interface ModeToggleProps {
   disabled?: boolean;
 }
 
-const tabClass =
-  "px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition disabled:opacity-40 disabled:cursor-not-allowed";
-
 export function ModeToggle({ value, onChange, disabled }: ModeToggleProps) {
   return (
-    <div className="inline-flex border border-zinc-800 rounded overflow-hidden">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange("form")}
-        className={`${tabClass} ${
-          value === "form" ? "bg-zinc-100 text-zinc-950" : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
-        }`}
-      >
-        Form
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange("chat")}
-        className={`${tabClass} ${
-          value === "chat" ? "bg-zinc-100 text-zinc-950" : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
-        }`}
-      >
-        Chat
-      </button>
+    <div className="inline-flex overflow-hidden rounded-md border border-border" role="tablist">
+      {(["form", "chat"] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          role="tab"
+          aria-selected={value === mode}
+          disabled={disabled}
+          onClick={() => onChange(mode)}
+          className={cn(
+            "caption-mono px-4 py-2 hover-interact disabled:cursor-not-allowed disabled:opacity-40",
+            value === mode
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
+          )}
+        >
+          {mode === "form" ? "Form" : "Chat"}
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RunStatusBar } from "@/components/RunStatusBar";
+import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 
 interface IdeaChatProps {
@@ -9,6 +12,11 @@ interface IdeaChatProps {
   isLoading: boolean;
   fileNote?: string | null;
 }
+
+const textareaClass = cn(
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+);
 
 export function IdeaChat({ onSubmit, onCancel, isLoading, fileNote }: IdeaChatProps) {
   const [messages, setMessages] = useState<string[]>([]);
@@ -42,33 +50,33 @@ export function IdeaChat({ onSubmit, onCancel, isLoading, fileNote }: IdeaChatPr
   };
 
   return (
-    <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-4 flex flex-col min-h-112">
-      <div>
-        <h2 className="text-xl font-bold text-zinc-100">Describe the idea</h2>
-        <p className="text-xs text-zinc-400 mt-1">
+    <Card className="flex min-h-112 flex-col space-y-4">
+      <CardHeader>
+        <CardTitle>Describe the idea</CardTitle>
+        <CardDescription>
           Dump what you know. Missing details stay unproven and will score accordingly.
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
       <div
         ref={threadRef}
-        className="flex-1 min-h-48 max-h-96 overflow-y-auto space-y-3 rounded border border-zinc-800 bg-zinc-950 p-3"
+        className="min-h-48 max-h-96 flex-1 space-y-4 overflow-y-auto rounded-md border border-border bg-background p-4"
       >
         {messages.length === 0 && !fileNote ? (
-          <p className="text-xs font-mono text-zinc-600 py-8 text-center">
+          <p className="caption-mono py-8 text-center text-muted-foreground">
             No notes yet. Add what you know, or drop a file, then run the stress test.
           </p>
         ) : (
           <>
             {fileNote && (
-              <div className="max-w-[95%] bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300 whitespace-pre-wrap">
+              <div className="max-w-[95%] whitespace-pre-wrap rounded-lg border border-border bg-background px-4 py-2 description text-foreground/90">
                 {fileNote}
               </div>
             )}
             {messages.map((message, index) => (
               <div
                 key={`${index}-${message.slice(0, 24)}`}
-                className="ml-auto max-w-[85%] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 whitespace-pre-wrap"
+                className="ml-auto max-w-[85%] whitespace-pre-wrap rounded-lg border border-border bg-secondary px-4 py-2 description text-foreground"
               >
                 {message}
               </div>
@@ -89,31 +97,27 @@ export function IdeaChat({ onSubmit, onCancel, isLoading, fileNote }: IdeaChatPr
           }
         }}
         placeholder="What you know so far. Enter to add a note, Shift+Enter for a new line."
-        className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 disabled:opacity-50"
+        className={textareaClass}
       />
 
       {isLoading ? (
         <RunStatusBar onCancel={onCancel} />
       ) : (
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={addNote}
-            disabled={!draft.trim()}
-            className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
-          >
+          <Button type="button" variant="secondary" disabled={!draft.trim()} onClick={addNote}>
             Add note
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            onClick={run}
+            size="lg"
+            className="flex-1"
             disabled={messages.length === 0 && !draft.trim() && !fileNote}
-            className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 disabled:opacity-40 disabled:hover:bg-zinc-100 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
+            onClick={run}
           >
             Execute stress test
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

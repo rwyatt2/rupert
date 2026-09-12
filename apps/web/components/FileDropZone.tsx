@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ACCEPT_FILE_TYPES } from "@/lib/extractText";
 import type { FileAttachment } from "@/lib/ingestFile";
 import { type ReactNode, useRef, useState } from "react";
@@ -40,7 +42,7 @@ export function FileDropZone({
 
   return (
     <div
-      className="relative space-y-3"
+      className="relative space-y-4"
       onDragEnter={(e) => {
         e.preventDefault();
         if (disabled) return;
@@ -60,15 +62,15 @@ export function FileDropZone({
       }}
     >
       {dragging && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-dashed border-zinc-500 bg-zinc-950/80 pointer-events-none">
-          <p className="text-xs font-mono uppercase tracking-wider text-zinc-200">Drop file to attach</p>
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-dashed border-border bg-background/80">
+          <p className="caption-mono text-foreground">Drop file to attach</p>
         </div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {toolbar}
         <div className="flex items-center gap-2">
-          {ingesting && <span className="text-[10px] font-mono uppercase text-zinc-500">Reading file…</span>}
+          {ingesting && <span className="caption-mono text-muted-foreground">Reading file…</span>}
           <input
             ref={inputRef}
             type="file"
@@ -80,43 +82,46 @@ export function FileDropZone({
               e.target.value = "";
             }}
           />
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             disabled={disabled || ingesting}
             onClick={() => inputRef.current?.click()}
-            className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-zinc-800 rounded bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Choose file
-          </button>
+          </Button>
         </div>
       </div>
 
       {attachment && (
-        <div className="border border-zinc-800 rounded-lg bg-zinc-900 p-3 space-y-2">
-          <div className="flex items-start justify-between gap-3">
+        <Card className="space-y-2 p-4">
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-xs font-mono text-zinc-200 truncate">{attachment.filename}</p>
-              <p className="text-[10px] font-mono uppercase text-zinc-500 mt-0.5">
+              <p className="caption-mono truncate text-foreground">{attachment.filename}</p>
+              <p className="caption-mono mt-2 text-muted-foreground">
                 {formatBytes(attachment.byteSize)} · {attachment.extractor} ·{" "}
                 {attachment.charCount.toLocaleString()} chars
                 {attachment.truncated ? " · truncated" : ""} ·{" "}
                 {attachment.classification.kind === "idea" ? "form" : "chat"}
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               disabled={disabled}
               onClick={onRemove}
-              className="shrink-0 text-[10px] font-mono uppercase text-zinc-500 hover:text-zinc-200 disabled:opacity-40"
+              className="normal-case tracking-normal"
             >
               Remove
-            </button>
+            </Button>
           </div>
-          <pre className="text-[11px] text-zinc-400 whitespace-pre-wrap break-words max-h-28 overflow-y-auto">
+          <pre className="description max-h-28 overflow-y-auto whitespace-pre-wrap break-words text-muted-foreground">
             {attachment.preview}
             {attachment.preview.length >= 480 ? "…" : ""}
           </pre>
-        </div>
+        </Card>
       )}
 
       {children}
