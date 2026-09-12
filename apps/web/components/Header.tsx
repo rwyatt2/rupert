@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { copy } from "@/lib/copy";
 import { UserButton } from "@clerk/nextjs";
 import type { ProviderSettings } from "@rupert/core";
 import { isProviderReady, profileFromSettings } from "@/lib/storage";
@@ -24,33 +25,49 @@ function GearIcon() {
 }
 
 export function Header({ settings, onOpenSettings, onOpenAccount, onNewIdea, showNewIdea }: HeaderProps) {
-  const modelLabel = settings.model.split("/").pop();
+  const modelLabel = settings.model.split("/").pop() ?? settings.model;
   const ready = isProviderReady(settings.provider, profileFromSettings(settings));
 
   return (
-    <div className="flex items-center justify-between border-b border-border pb-4">
-      <div>
-        <h1 className="h3 font-mono tracking-tight">RUPERT</h1>
-        <p className="caption-mono mt-1 text-muted-foreground">Adversarial Idea Stress-Testing System</p>
+    <header
+      data-testid="app-header"
+      className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="min-w-0">
+        <h1 className="h3 font-mono tracking-tight">{copy.brand.name.toUpperCase()}</h1>
+        <p className="caption-mono mt-1 text-muted-foreground">{copy.brand.subtitle}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         {showNewIdea && (
           <Button type="button" size="sm" onClick={onNewIdea}>
-            New idea
+            {copy.dashboard.newIdea}
           </Button>
         )}
-        <Button type="button" variant="secondary" size="sm" onClick={onOpenSettings}>
-          <span className="inline-flex items-center gap-2">
-            <span>
-              Provider: {settings.provider} ({modelLabel})
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onOpenSettings}
+          aria-label="Open model settings"
+          className="max-w-full"
+        >
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <span className="truncate">
+              <span className="sm:hidden capitalize">{settings.provider}</span>
+              <span className="hidden sm:inline">
+                {copy.dashboard.providerLabel(settings.provider, modelLabel)}
+              </span>
             </span>
             {ready ? (
-              <Badge variant="default" className="gap-1 border-0 bg-transparent p-0 font-normal normal-case tracking-normal">
-                <span className="inline-block size-2 rounded-full bg-foreground/70" aria-hidden />
-                Ready
+              <Badge
+                variant="default"
+                className="gap-1 border-0 bg-transparent p-0 font-normal normal-case tracking-normal"
+              >
+                <span className="inline-block size-2 shrink-0 rounded-full bg-foreground/70" aria-hidden />
+                {copy.dashboard.providerReady}
               </Badge>
             ) : (
-              <span className="text-muted-foreground">No key</span>
+              <span className="shrink-0 text-muted-foreground">{copy.dashboard.providerNoKey}</span>
             )}
           </span>
         </Button>
@@ -68,6 +85,6 @@ export function Header({ settings, onOpenSettings, onOpenAccount, onNewIdea, sho
           </UserButton.MenuItems>
         </UserButton>
       </div>
-    </div>
+    </header>
   );
 }

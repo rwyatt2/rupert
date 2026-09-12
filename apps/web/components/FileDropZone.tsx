@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { copy } from "@/lib/copy";
 import { ACCEPT_FILE_TYPES } from "@/lib/extractText";
 import type { FileAttachment } from "@/lib/ingestFile";
 import { type ReactNode, useRef, useState } from "react";
@@ -43,6 +44,7 @@ export function FileDropZone({
   return (
     <div
       className="relative space-y-4"
+      data-testid="file-drop-zone"
       onDragEnter={(e) => {
         e.preventDefault();
         if (disabled) return;
@@ -63,14 +65,14 @@ export function FileDropZone({
     >
       {dragging && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-dashed border-border bg-background/80">
-          <p className="caption-mono text-foreground">Drop file to attach</p>
+          <p className="caption-mono text-foreground">{copy.file.drop}</p>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {toolbar}
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0 overflow-x-auto">{toolbar}</div>
         <div className="flex items-center gap-2">
-          {ingesting && <span className="caption-mono text-muted-foreground">Reading file…</span>}
+          {ingesting && <span className="caption-mono text-muted-foreground">{copy.file.reading}</span>}
           <input
             ref={inputRef}
             type="file"
@@ -89,14 +91,14 @@ export function FileDropZone({
             disabled={disabled || ingesting}
             onClick={() => inputRef.current?.click()}
           >
-            Choose file
+            {copy.file.choose}
           </Button>
         </div>
       </div>
 
       {attachment && (
         <Card className="space-y-2 p-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="caption-mono truncate text-foreground">{attachment.filename}</p>
               <p className="caption-mono mt-2 text-muted-foreground">
@@ -112,9 +114,9 @@ export function FileDropZone({
               size="sm"
               disabled={disabled}
               onClick={onRemove}
-              className="normal-case tracking-normal"
+              className="shrink-0 normal-case tracking-normal"
             >
-              Remove
+              {copy.file.remove}
             </Button>
           </div>
           <pre className="description max-h-28 overflow-y-auto whitespace-pre-wrap break-words text-muted-foreground">

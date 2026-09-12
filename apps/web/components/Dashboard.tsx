@@ -15,8 +15,8 @@ import { IdeaForm } from "@/components/IdeaForm";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Scorecard } from "@/components/Scorecard";
 import { SettingsModal, type SettingsTab } from "@/components/SettingsModal";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   briefNoteFromAttachment,
   ideaFromAttachment,
@@ -39,6 +39,7 @@ import {
   type InputMode,
   type McpUiSettings,
 } from "@/lib/storage";
+import { copy } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
@@ -53,26 +54,27 @@ function Banner({
   onDismiss: () => void;
 }) {
   return (
-    <Card
+    <Alert
+      variant={tone === "error" ? "destructive" : "default"}
       className={cn(
-        "flex items-start justify-between gap-4 p-4",
-        tone === "error"
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
-          : "border-border bg-card text-muted-foreground",
+        "flex items-start gap-4 px-4 py-4",
+        tone === "neutral" && "border-border bg-card text-muted-foreground",
       )}
     >
-      <p className="description min-w-0">{message}</p>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onDismiss}
-        aria-label="Dismiss notification"
-        className="shrink-0 normal-case tracking-normal"
-      >
-        Dismiss
-      </Button>
-    </Card>
+      <AlertDescription className="description min-w-0 flex-1">{message}</AlertDescription>
+      <AlertAction>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onDismiss}
+          aria-label="Dismiss notification"
+          className="normal-case tracking-normal"
+        >
+          {copy.dashboard.dismiss}
+        </Button>
+      </AlertAction>
+    </Alert>
   );
 }
 
@@ -148,7 +150,7 @@ export function Dashboard() {
       setInputMode(mode);
       if (userId) saveInputMode(userId, mode);
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not read that file.");
+      setErrorMessage(err instanceof Error ? err.message : copy.dashboard.errorFileRead);
     } finally {
       setIngesting(false);
     }
@@ -162,7 +164,7 @@ export function Dashboard() {
   const handleEvaluate = async (payload: { idea?: IdeaInput; brief?: ChatBrief }) => {
     if (!userId || !settings || !isProviderReady(settings.provider, profileFromSettings(settings))) {
       openSettings("models");
-      setErrorMessage("Set an API key before running an evaluation.");
+      setErrorMessage(copy.dashboard.errorNoKey);
       setStoppedMessage(null);
       return;
     }
@@ -197,21 +199,21 @@ export function Dashboard() {
         signal: controller.signal,
       });
       if (controller.signal.aborted) {
-        setStoppedMessage("Evaluation stopped");
+        setStoppedMessage(copy.dashboard.stopped);
         return;
       }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Evaluation failed");
+      if (!res.ok) throw new Error(data.error || copy.dashboard.errorGeneric);
       setCurrentReport(data);
       saveEvaluationToHistory(userId, data);
       setHistory(getEvaluationHistory(userId));
     } catch (err: unknown) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
         setErrorMessage(null);
-        setStoppedMessage("Evaluation stopped");
+        setStoppedMessage(copy.dashboard.stopped);
         return;
       }
-      setErrorMessage(err instanceof Error ? err.message : "Evaluation failed.");
+      setErrorMessage(err instanceof Error ? err.message : copy.dashboard.errorGeneric);
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -223,7 +225,7 @@ export function Dashboard() {
   if (!isLoaded || !userId || !settings) return null;
 
   return (
-    <main className="min-h-screen bg-background p-6 selection:bg-secondary md:p-12">
+    <main className="min-h-screen bg-background p-4 selection:bg-secondary sm:p-6 md:p-12" data-testid="dashboard">
       <div className="mx-auto max-w-6xl space-y-8">
         <Header
           settings={settings}
@@ -242,7 +244,7 @@ export function Dashboard() {
         )}
 
         <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">
+          <div className="order-2 min-w-0 flex-1 lg:order-1">
             {currentReport ? (
               <Scorecard report={currentReport} onReset={handleNewIdea} />
             ) : (
@@ -276,6 +278,7 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          <div className="order-1 lg:order-2">
           <HistorySidebar
             history={history}
             currentId={currentReport?.id}
@@ -292,6 +295,7 @@ export function Dashboard() {
               if (currentReport?.id === id) setCurrentReport(null);
             }}
           />
+          </div>
         </div>
       </div>
 

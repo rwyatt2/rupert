@@ -1,8 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
   AI_PROVIDERS,
@@ -16,7 +24,7 @@ import {
   type AIProvider,
   type ProviderSettings,
 } from "@rupert/core";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
   emptyProviderProfiles,
   getProviderProfiles,
@@ -28,6 +36,7 @@ import {
   type McpUiSettings,
   type ProviderProfiles,
 } from "@/lib/storage";
+import { copy } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 
 export type SettingsTab = "account" | "models";
@@ -49,36 +58,11 @@ function ReadyMark({ ready }: { ready: boolean }) {
     return (
       <span className="caption-mono inline-flex items-center gap-2 text-muted-foreground">
         <span className="inline-block size-2 rounded-full bg-foreground/70" aria-hidden />
-        Ready
+        {copy.settings.ready}
       </span>
     );
   }
-  return <span className="caption-mono text-muted-foreground">No key</span>;
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "caption-mono rounded-md px-4 py-2 hover-interact",
-        active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
-  );
+  return <span className="caption-mono text-muted-foreground">{copy.settings.noKey}</span>;
 }
 
 function AccountTab() {
@@ -89,7 +73,7 @@ function AccountTab() {
   const [message, setMessage] = useState<string | null>(null);
 
   if (!isLoaded || !user) {
-    return <p className="description text-muted-foreground">Loading account…</p>;
+    return <p className="description text-muted-foreground">{copy.settings.loadingAccount}</p>;
   }
 
   const name = draftName ?? user.fullName ?? user.firstName ?? "";
@@ -105,9 +89,9 @@ function AccountTab() {
         lastName: rest.join(" ") || "",
       });
       setDraftName(trimmed);
-      setMessage("Name saved.");
+      setMessage(copy.settings.nameSaved);
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Could not save name.");
+      setMessage(err instanceof Error ? err.message : copy.settings.nameSaveFailed);
     } finally {
       setSaving(false);
     }
@@ -122,28 +106,28 @@ function AccountTab() {
           aria-hidden
         />
         <div className="min-w-0">
-          <p className="h5 truncate">{user.fullName || "Signed in"}</p>
+          <p className="h5 truncate">{user.fullName || copy.settings.signedIn}</p>
           <p className="description truncate text-muted-foreground">{user.primaryEmailAddress?.emailAddress}</p>
         </div>
       </div>
 
       <label className="block space-y-2">
-        <Label htmlFor="display-name">Display name</Label>
+        <Label htmlFor="display-name">{copy.settings.displayName}</Label>
         <Input id="display-name" type="text" value={name} onChange={(event) => setDraftName(event.target.value)} />
       </label>
 
       <p className="h6 text-muted-foreground">
-        API keys stay in this browser for your account and are never stored on Rupert&apos;s servers.
+        {copy.settings.keysNote}
       </p>
 
       {message && <p className="description text-muted-foreground">{message}</p>}
 
       <div className="flex justify-between gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={() => void signOut({ redirectUrl: "/" })}>
-          Sign out
+          {copy.settings.signOut}
         </Button>
         <Button type="button" disabled={saving} onClick={() => void saveName()}>
-          Save name
+          {copy.settings.saveName}
         </Button>
       </div>
     </div>
@@ -180,8 +164,6 @@ export function SettingsModal({
     });
   }, [settings, mcp, isOpen, initialTab, userId]);
 
-  if (!isOpen) return null;
-
   const syncSettings = (next: ProviderSettings) => {
     setLocalSettings(next);
     setLocalProfiles((prev) => ({
@@ -215,37 +197,35 @@ export function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="max-h-[90vh] w-full max-w-md space-y-6 overflow-y-auto rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <h3 className="caption-mono text-foreground">Settings</h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            aria-label="Close settings"
-            className="normal-case tracking-normal"
-          >
-            Close
-          </Button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-md" showCloseButton data-testid="settings-modal">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="caption-mono text-left font-medium uppercase tracking-wider">
+            {copy.settings.title}
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="flex gap-2 border-b border-border pb-4" role="tablist">
-          <TabButton active={tab === "account"} onClick={() => setTab("account")}>
-            Account
-          </TabButton>
-          <TabButton active={tab === "models"} onClick={() => setTab("models")}>
-            Models
-          </TabButton>
-        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => setTab(value as SettingsTab)}
+          className="gap-6"
+        >
+          <TabsList variant="line" className="caption-mono h-auto w-full justify-start gap-2 bg-transparent p-0">
+            <TabsTrigger value="account" className="px-4 py-2">
+              {copy.settings.account}
+            </TabsTrigger>
+            <TabsTrigger value="models" className="px-4 py-2">
+              {copy.settings.models}
+            </TabsTrigger>
+          </TabsList>
 
-        {tab === "account" ? (
-          <AccountTab />
-        ) : (
-          <>
+          <TabsContent value="account" className="mt-0">
+            <AccountTab />
+          </TabsContent>
+
+          <TabsContent value="models" className="mt-0 space-y-6">
             <div>
-              <Label className="mb-4 block">Provider</Label>
+              <Label className="mb-4 block">{copy.settings.provider}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {AI_PROVIDERS.map((p) => {
                   const selected = localSettings.provider === p;
@@ -274,13 +254,11 @@ export function SettingsModal({
 
             <div>
               <Label className="mb-2 block">
-                {localSettings.provider === "ollama"
-                  ? "API key (optional for local, required for cloud)"
-                  : "API key (this browser, for your account)"}
+                {localSettings.provider === "ollama" ? copy.settings.apiKeyOllama : copy.settings.apiKey}
               </Label>
               <Input
                 type="password"
-                placeholder={localSettings.provider === "ollama" ? "Ollama Cloud key" : "sk-..."}
+                placeholder={localSettings.provider === "ollama" ? copy.settings.apiKeyOllamaCloud : "sk-..."}
                 value={localSettings.apiKey}
                 onChange={(e) => {
                   const apiKey = e.target.value;
@@ -292,14 +270,14 @@ export function SettingsModal({
               <p className="h6 mt-2 text-muted-foreground">
                 {localSettings.provider === "ollama"
                   ? hosted
-                    ? "Local Ollama is not reachable from this hosted app. A key sends requests to ollama.com."
-                    : "A key always uses Ollama Cloud. Clear the key to use local Ollama."
-                  : "Stored in this browser for your account. Sent only with the current evaluation request — never written to a remote store."}
+                    ? copy.settings.ollamaHostedKey
+                    : copy.settings.ollamaLocalKey
+                  : copy.settings.ollamaKeyStored}
               </p>
             </div>
 
             <div>
-              <Label className="mb-2 block">Model identifier</Label>
+              <Label className="mb-2 block">{copy.settings.model}</Label>
               <Input
                 type="text"
                 value={localSettings.model}
@@ -349,7 +327,7 @@ export function SettingsModal({
 
             {localSettings.provider === "ollama" && (
               <div>
-                <Label className="mb-2 block">Ollama base URL</Label>
+                <Label className="mb-2 block">{copy.settings.ollamaUrl}</Label>
                 <Input
                   type="text"
                   placeholder={hosted ? OLLAMA_CLOUD_URL : OLLAMA_LOCAL_URL}
@@ -371,8 +349,8 @@ export function SettingsModal({
                         title={
                           localLocked
                             ? hosted
-                              ? "Local Ollama is not reachable on this host."
-                              : "Clear the API key to use local Ollama."
+                              ? copy.settings.ollamaLocalLockedHosted
+                              : copy.settings.ollamaLocalLockedKey
                             : undefined
                         }
                         onClick={() =>
@@ -391,19 +369,15 @@ export function SettingsModal({
                   })}
                 </div>
                 <p className="h6 mt-2 text-muted-foreground">
-                  {hosted
-                    ? "Use https://ollama.com. A local 127.0.0.1 URL will not work on this host."
-                    : "Local is http://127.0.0.1:11434. Cloud is https://ollama.com — not the /api path from the docs."}
+                  {hosted ? copy.settings.ollamaHostedUrl : copy.settings.ollamaLocalUrl}
                 </p>
               </div>
             )}
 
             <div className="space-y-4 border-t border-border pt-4">
-              <h4 className="caption-mono text-muted-foreground">MCP evidence (optional)</h4>
+              <h4 className="caption-mono text-muted-foreground">{copy.settings.mcpTitle}</h4>
               {hosted ? (
-                <p className="h6 text-muted-foreground">
-                  MCP evidence needs local stdio servers in ~/.rupert/mcp.json, which are not available on this host.
-                </p>
+                <p className="h6 text-muted-foreground">{copy.settings.mcpHosted}</p>
               ) : (
                 <>
                   <label className="description flex items-start gap-2 text-foreground/90">
@@ -413,12 +387,10 @@ export function SettingsModal({
                       onChange={(e) => setLocalMcp({ ...localMcp, useMcpEvidence: e.target.checked })}
                       className="mt-1"
                     />
-                    Query servers in ~/.rupert/mcp.json before scoring. Off by default. Fail-open if a server is down.
+                    {copy.settings.mcpToggle}
                   </label>
                   <div>
-                    <Label className="mb-2 block">
-                      Only these server names (comma-separated, blank = all enabled)
-                    </Label>
+                    <Label className="mb-2 block">{copy.settings.mcpFilter}</Label>
                     <Input
                       type="text"
                       value={localMcp.onlyServers.join(", ")}
@@ -438,17 +410,17 @@ export function SettingsModal({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter className="border-t border-border bg-transparent p-0 pt-4 sm:justify-end">
               <Button type="button" variant="ghost" onClick={onClose}>
-                Cancel
+                {copy.settings.cancel}
               </Button>
               <Button type="button" onClick={handleSave}>
-                Save configuration
+                {copy.settings.save}
               </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </DialogFooter>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }

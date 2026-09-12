@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { copy } from "@/lib/copy";
+import { formatVerdict } from "@/lib/format-verdict";
 import { cn } from "@/lib/utils";
 import type { EvaluationReport } from "@rupert/core";
 
@@ -19,20 +21,24 @@ export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDele
   const onEmptyForm = !currentId;
 
   return (
-    <aside className="h-fit w-full shrink-0 lg:w-72">
+    <aside className="h-fit w-full shrink-0 lg:w-72" data-testid="history-sidebar">
       <Card className="p-4">
-        <Button type="button" size="lg" disabled={onEmptyForm} onClick={onNewIdea} className="mb-4">
-          New idea
+        <Button type="button" size="lg" disabled={onEmptyForm} onClick={onNewIdea} className="mb-4 w-full sm:w-auto">
+          {copy.dashboard.newIdea}
         </Button>
-        <h3 className="caption-mono mb-4 text-muted-foreground">Local history</h3>
+        <h3 className="caption-mono mb-4 text-muted-foreground">{copy.dashboard.historyTitle}</h3>
         {latest && previous && (
           <div className="caption-mono mb-4 rounded-md border border-border bg-background p-4 text-muted-foreground">
-            Last two: {latest.ideaName} {latest.compositeScore} vs {previous.ideaName}{" "}
-            {previous.compositeScore}
+            {copy.dashboard.historyCompare(
+              latest.ideaName,
+              latest.compositeScore,
+              previous.ideaName,
+              previous.compositeScore,
+            )}
           </div>
         )}
         {history.length === 0 && (
-          <p className="description text-muted-foreground">No evaluations stored in this browser.</p>
+          <p className="description text-muted-foreground">{copy.dashboard.historyEmpty}</p>
         )}
         <ul className="max-h-112 space-y-2 overflow-auto">
           {history.map((report) => (
@@ -43,10 +49,14 @@ export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDele
                 currentId === report.id ? "border-border bg-secondary" : "border-border bg-background",
               )}
             >
-              <button type="button" onClick={() => onSelect(report)} className="w-full text-left">
+              <button
+                type="button"
+                onClick={() => onSelect(report)}
+                className="focus-ring w-full rounded-md text-left"
+              >
                 <div className="h5 truncate text-foreground">{report.ideaName}</div>
                 <div className="caption-mono mt-2 text-muted-foreground">
-                  {report.compositeScore}/100 · {report.verdict.replaceAll("_", " ")}
+                  {report.compositeScore}/100 · {formatVerdict(report.verdict)}
                 </div>
               </button>
               <button
@@ -54,7 +64,7 @@ export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDele
                 onClick={() => onDelete(report.id)}
                 className="caption-mono mt-2 text-destructive hover-interact hover:text-destructive/80"
               >
-                Delete
+                {copy.dashboard.historyDelete}
               </button>
             </li>
           ))}

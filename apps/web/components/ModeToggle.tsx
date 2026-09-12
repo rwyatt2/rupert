@@ -1,6 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { copy } from "@/lib/copy";
 import type { InputMode } from "@/lib/storage";
 
 interface ModeToggleProps {
@@ -11,25 +12,19 @@ interface ModeToggleProps {
 
 export function ModeToggle({ value, onChange, disabled }: ModeToggleProps) {
   return (
-    <div className="inline-flex overflow-hidden rounded-md border border-border" role="tablist">
-      {(["form", "chat"] as const).map((mode) => (
-        <button
-          key={mode}
-          type="button"
-          role="tab"
-          aria-selected={value === mode}
-          disabled={disabled}
-          onClick={() => onChange(mode)}
-          className={cn(
-            "caption-mono px-4 py-2 hover-interact disabled:cursor-not-allowed disabled:opacity-40",
-            value === mode
-              ? "bg-primary text-primary-foreground"
-              : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
-          )}
-        >
-          {mode === "form" ? "Form" : "Chat"}
-        </button>
-      ))}
-    </div>
+    <Tabs
+      value={value}
+      onValueChange={(next) => onChange(next as InputMode)}
+      className="w-fit"
+    >
+      <TabsList variant="line" className="caption-mono h-auto gap-0 bg-transparent p-0">
+        <TabsTrigger value="form" disabled={disabled} className="px-4 py-2" data-testid="mode-form">
+          {copy.mode.form}
+        </TabsTrigger>
+        <TabsTrigger value="chat" disabled={disabled} className="px-4 py-2" data-testid="mode-chat">
+          {copy.mode.chat}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }
