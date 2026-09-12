@@ -6,14 +6,14 @@ export const dynamic = "force-dynamic";
 export default function SignInPage() {
   const keys = clerkKeyStatus();
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-12 text-zinc-100">
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12 md:px-8">
       {keys.hasPublishableKey ? (
         <SignInForm />
       ) : (
-        <div className="max-w-md space-y-3 text-center">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-500">Rupert</p>
-          <h1 className="text-xl font-semibold">Sign-in is not configured</h1>
-          <p className="text-sm leading-6 text-zinc-400">
+        <div className="max-w-md space-y-4 text-center">
+          <p className="caption-mono text-muted-foreground">Rupert</p>
+          <h1 className="h2">Sign-in is not configured</h1>
+          <p className="description text-muted-foreground">
             This host is missing Clerk keys. Add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY in the Vercel
             project, then redeploy.
           </p>

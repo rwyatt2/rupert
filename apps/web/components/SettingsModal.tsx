@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
   AI_PROVIDERS,
@@ -25,6 +28,7 @@ import {
   type McpUiSettings,
   type ProviderProfiles,
 } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 
 export type SettingsTab = "account" | "models";
 
@@ -43,13 +47,13 @@ const hosted = Boolean(process.env.NEXT_PUBLIC_VERCEL_ENV);
 function ReadyMark({ ready }: { ready: boolean }) {
   if (ready) {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-400">
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-300" aria-hidden />
+      <span className="caption-mono inline-flex items-center gap-2 text-muted-foreground">
+        <span className="inline-block size-2 rounded-full bg-foreground/70" aria-hidden />
         Ready
       </span>
     );
   }
-  return <span className="text-[10px] uppercase tracking-wider text-zinc-600">No key</span>;
+  return <span className="caption-mono text-muted-foreground">No key</span>;
 }
 
 function TabButton({
@@ -64,10 +68,13 @@ function TabButton({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
-      className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded ${
-        active ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
-      }`}
+      className={cn(
+        "caption-mono rounded-md px-4 py-2 hover-interact",
+        active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+      )}
     >
       {children}
     </button>
@@ -82,7 +89,7 @@ function AccountTab() {
   const [message, setMessage] = useState<string | null>(null);
 
   if (!isLoaded || !user) {
-    return <p className="text-xs text-zinc-500">Loading account…</p>;
+    return <p className="description text-muted-foreground">Loading account…</p>;
   }
 
   const name = draftName ?? user.fullName ?? user.firstName ?? "";
@@ -108,50 +115,36 @@ function AccountTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <div
-          className="h-12 w-12 shrink-0 rounded-full border border-zinc-700 bg-zinc-800 bg-cover bg-center"
+          className="size-12 shrink-0 rounded-full border border-border bg-secondary bg-cover bg-center"
           style={{ backgroundImage: `url(${user.imageUrl})` }}
           aria-hidden
         />
         <div className="min-w-0">
-          <p className="truncate text-sm text-zinc-100">{user.fullName || "Signed in"}</p>
-          <p className="truncate text-xs text-zinc-500">{user.primaryEmailAddress?.emailAddress}</p>
+          <p className="h5 truncate">{user.fullName || "Signed in"}</p>
+          <p className="description truncate text-muted-foreground">{user.primaryEmailAddress?.emailAddress}</p>
         </div>
       </div>
 
-      <label className="block space-y-1">
-        <span className="block text-xs font-mono uppercase text-zinc-400">Display name</span>
-        <input
-          type="text"
-          value={name}
-          onChange={(event) => setDraftName(event.target.value)}
-          className="w-full rounded border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
-        />
+      <label className="block space-y-2">
+        <Label htmlFor="display-name">Display name</Label>
+        <Input id="display-name" type="text" value={name} onChange={(event) => setDraftName(event.target.value)} />
       </label>
 
-      <p className="text-[10px] text-zinc-500">
+      <p className="h6 text-muted-foreground">
         API keys stay in this browser for your account and are never stored on Rupert&apos;s servers.
       </p>
 
-      {message && <p className="text-[11px] text-zinc-400">{message}</p>}
+      {message && <p className="description text-muted-foreground">{message}</p>}
 
       <div className="flex justify-between gap-2 pt-2">
-        <button
-          type="button"
-          onClick={() => void signOut({ redirectUrl: "/" })}
-          className="px-4 py-2 text-xs font-mono uppercase text-zinc-400 hover:text-zinc-200"
-        >
+        <Button type="button" variant="ghost" onClick={() => void signOut({ redirectUrl: "/" })}>
           Sign out
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void saveName()}
-          className="rounded bg-zinc-100 px-4 py-2 text-xs font-mono font-bold uppercase text-zinc-950 hover:bg-zinc-200 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="button" disabled={saving} onClick={() => void saveName()}>
           Save name
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -222,16 +215,23 @@ export function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 max-w-md w-full space-y-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-          <h3 className="text-sm font-mono uppercase tracking-wider text-zinc-200">Settings</h3>
-          <button type="button" onClick={onClose} className="text-zinc-500 hover:text-zinc-300 font-mono text-xs">
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="max-h-[90vh] w-full max-w-md space-y-6 overflow-y-auto rounded-lg border border-border bg-card p-6">
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <h3 className="caption-mono text-foreground">Settings</h3>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="Close settings"
+            className="normal-case tracking-normal"
+          >
+            Close
+          </Button>
         </div>
 
-        <div className="flex gap-1 border-b border-zinc-800 pb-3">
+        <div className="flex gap-2 border-b border-border pb-4" role="tablist">
           <TabButton active={tab === "account"} onClick={() => setTab("account")}>
             Account
           </TabButton>
@@ -245,7 +245,7 @@ export function SettingsModal({
         ) : (
           <>
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Provider</label>
+              <Label className="mb-4 block">Provider</Label>
               <div className="grid grid-cols-2 gap-2">
                 {AI_PROVIDERS.map((p) => {
                   const selected = localSettings.provider === p;
@@ -255,13 +255,14 @@ export function SettingsModal({
                       key={p}
                       type="button"
                       onClick={() => handleProviderChange(p)}
-                      className={`py-2 px-2 text-xs font-mono rounded border ${
+                      className={cn(
+                        "caption-mono rounded-md border px-2 py-2 hover-interact",
                         selected
-                          ? "bg-zinc-800 border-zinc-600 text-zinc-100"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                      }`}
+                          ? "border-border bg-secondary text-foreground"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground",
+                      )}
                     >
-                      <span className="flex flex-col items-center gap-0.5">
+                      <span className="flex flex-col items-center gap-2">
                         <span className="capitalize">{p}</span>
                         <ReadyMark ready={ready} />
                       </span>
@@ -272,12 +273,12 @@ export function SettingsModal({
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
+              <Label className="mb-2 block">
                 {localSettings.provider === "ollama"
                   ? "API key (optional for local, required for cloud)"
                   : "API key (this browser, for your account)"}
-              </label>
-              <input
+              </Label>
+              <Input
                 type="password"
                 placeholder={localSettings.provider === "ollama" ? "Ollama Cloud key" : "sk-..."}
                 value={localSettings.apiKey}
@@ -286,9 +287,9 @@ export function SettingsModal({
                   const next = { ...localSettings, apiKey };
                   syncSettings(localSettings.provider === "ollama" ? resolveOllamaSettings(next) : next);
                 }}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+                className="font-mono"
               />
-              <p className="text-[10px] text-zinc-500 mt-1">
+              <p className="h6 mt-2 text-muted-foreground">
                 {localSettings.provider === "ollama"
                   ? hosted
                     ? "Local Ollama is not reachable from this hosted app. A key sends requests to ollama.com."
@@ -298,25 +299,26 @@ export function SettingsModal({
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Model identifier</label>
-              <input
+              <Label className="mb-2 block">Model identifier</Label>
+              <Input
                 type="text"
                 value={localSettings.model}
                 onChange={(e) => syncSettings({ ...localSettings, model: e.target.value })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+                className="font-mono"
               />
               {localSettings.provider === "google" && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {GOOGLE_MODEL_OPTIONS.map((option) => (
                     <button
                       key={option.id}
                       type="button"
                       onClick={() => syncSettings({ ...localSettings, model: option.id })}
-                      className={`px-2 py-1 text-[10px] font-mono rounded border ${
+                      className={cn(
+                        "caption-mono rounded-md border px-2 py-1 hover-interact",
                         localSettings.model === option.id
-                          ? "bg-zinc-800 border-zinc-600 text-zinc-100"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                      }`}
+                          ? "border-border bg-secondary text-foreground"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground",
+                      )}
                     >
                       {option.label}
                     </button>
@@ -325,17 +327,18 @@ export function SettingsModal({
               )}
               {localSettings.provider === "ollama" &&
                 (isOllamaCloud(localSettings.customBaseUrl) || Boolean(localSettings.apiKey.trim())) && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {OLLAMA_CLOUD_MODEL_OPTIONS.map((option) => (
                       <button
                         key={option.id}
                         type="button"
                         onClick={() => syncSettings({ ...localSettings, model: option.id })}
-                        className={`px-2 py-1 text-[10px] font-mono rounded border ${
+                        className={cn(
+                          "caption-mono rounded-md border px-2 py-1 hover-interact",
                           localSettings.model === option.id
-                            ? "bg-zinc-800 border-zinc-600 text-zinc-100"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                        }`}
+                            ? "border-border bg-secondary text-foreground"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground",
+                        )}
                       >
                         {option.label}
                       </button>
@@ -346,17 +349,17 @@ export function SettingsModal({
 
             {localSettings.provider === "ollama" && (
               <div>
-                <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Ollama base URL</label>
-                <input
+                <Label className="mb-2 block">Ollama base URL</Label>
+                <Input
                   type="text"
                   placeholder={hosted ? OLLAMA_CLOUD_URL : OLLAMA_LOCAL_URL}
                   value={localSettings.customBaseUrl || (hosted ? OLLAMA_CLOUD_URL : OLLAMA_LOCAL_URL)}
                   onChange={(e) =>
                     syncSettings(resolveOllamaSettings({ ...localSettings, customBaseUrl: e.target.value }))
                   }
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+                  className="font-mono"
                 />
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {OLLAMA_BASE_OPTIONS.map((option) => {
                     const current = localSettings.customBaseUrl || (hosted ? OLLAMA_CLOUD_URL : OLLAMA_LOCAL_URL);
                     const localLocked = option.id === OLLAMA_LOCAL_URL && (hosted || Boolean(localSettings.apiKey.trim()));
@@ -375,18 +378,19 @@ export function SettingsModal({
                         onClick={() =>
                           syncSettings(resolveOllamaSettings({ ...localSettings, customBaseUrl: option.id }))
                         }
-                        className={`px-2 py-1 text-[10px] font-mono rounded border ${
+                        className={cn(
+                          "caption-mono rounded-md border px-2 py-1 hover-interact disabled:cursor-not-allowed disabled:opacity-40",
                           current === option.id
-                            ? "bg-zinc-800 border-zinc-600 text-zinc-100"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                        } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-500`}
+                            ? "border-border bg-secondary text-foreground"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground",
+                        )}
                       >
                         {option.label}
                       </button>
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-zinc-500 mt-1">
+                <p className="h6 mt-2 text-muted-foreground">
                   {hosted
                     ? "Use https://ollama.com. A local 127.0.0.1 URL will not work on this host."
                     : "Local is http://127.0.0.1:11434. Cloud is https://ollama.com — not the /api path from the docs."}
@@ -394,28 +398,28 @@ export function SettingsModal({
               </div>
             )}
 
-            <div className="border-t border-zinc-800 pt-4 space-y-3">
-              <h4 className="text-xs font-mono uppercase text-zinc-400">MCP evidence (optional)</h4>
+            <div className="space-y-4 border-t border-border pt-4">
+              <h4 className="caption-mono text-muted-foreground">MCP evidence (optional)</h4>
               {hosted ? (
-                <p className="text-[10px] text-zinc-500">
+                <p className="h6 text-muted-foreground">
                   MCP evidence needs local stdio servers in ~/.rupert/mcp.json, which are not available on this host.
                 </p>
               ) : (
                 <>
-                  <label className="flex items-start gap-2 text-xs text-zinc-300">
+                  <label className="description flex items-start gap-2 text-foreground/90">
                     <input
                       type="checkbox"
                       checked={localMcp.useMcpEvidence}
                       onChange={(e) => setLocalMcp({ ...localMcp, useMcpEvidence: e.target.checked })}
-                      className="mt-0.5"
+                      className="mt-1"
                     />
                     Query servers in ~/.rupert/mcp.json before scoring. Off by default. Fail-open if a server is down.
                   </label>
                   <div>
-                    <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
+                    <Label className="mb-2 block">
                       Only these server names (comma-separated, blank = all enabled)
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="text"
                       value={localMcp.onlyServers.join(", ")}
                       onChange={(e) =>
@@ -427,24 +431,20 @@ export function SettingsModal({
                             .filter(Boolean),
                         })
                       }
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 font-mono"
+                      className="font-mono"
                     />
                   </div>
                 </>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-mono uppercase text-zinc-400">
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-mono font-bold uppercase rounded"
-              >
+              </Button>
+              <Button type="button" onClick={handleSave}>
                 Save configuration
-              </button>
+              </Button>
             </div>
           </>
         )}

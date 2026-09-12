@@ -1,3 +1,7 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { scoreTextClass } from "@/lib/score-colors";
 import Link from "next/link";
 
 const PRINCIPLES = ["Zero sycophancy", "Seven dimensions", "Instant kill triggers"] as const;
@@ -15,64 +19,50 @@ const MOCK_DIMENSIONS = [
   { name: "Unit economics", score: 4 },
 ] as const;
 
-function scoreColor(score: number) {
-  if (score >= 8) return "text-emerald-400";
-  if (score >= 6) return "text-amber-400";
-  return "text-rose-400";
-}
-
 export function LandingPage() {
   return (
-    <div className="landing-canvas relative flex min-h-screen flex-col text-zinc-100">
+    <div className="landing-canvas relative flex min-h-screen flex-col">
       <div className="landing-scanline pointer-events-none absolute inset-0" aria-hidden />
 
-      <header className="relative z-10 flex items-center justify-between border-b border-zinc-800/80 px-5 py-4 sm:px-8">
-        <p className="font-mono text-sm font-bold tracking-tight">RUPERT</p>
-        <nav className="flex items-center gap-4 text-xs font-mono uppercase tracking-wider">
-          <Link href="/privacy" className="text-zinc-500 transition hover:text-zinc-300">
+      <header className="relative z-10 flex items-center justify-between border-b border-border/80 px-6 py-4 md:px-8">
+        <p className="caption-mono font-bold tracking-tight text-foreground">RUPERT</p>
+        <nav className="flex items-center gap-4">
+          <Link
+            href="/privacy"
+            className="caption-mono text-muted-foreground hover-interact hover:text-foreground"
+          >
             Privacy
           </Link>
-          <Link href="/terms" className="text-zinc-500 transition hover:text-zinc-300">
+          <Link
+            href="/terms"
+            className="caption-mono text-muted-foreground hover-interact hover:text-foreground"
+          >
             Terms
           </Link>
-          <Link
-            href="/sign-in"
-            className="rounded bg-zinc-100 px-3 py-1.5 font-bold text-zinc-950 transition hover:bg-zinc-200"
-          >
-            Sign in
-          </Link>
+          <Button asChild size="sm">
+            <Link href="/sign-in">Sign in</Link>
+          </Button>
         </nav>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-12 px-5 py-12 sm:px-8 lg:flex-row lg:items-center lg:gap-16">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-12 px-6 py-12 md:px-8 lg:flex-row lg:items-center lg:gap-16">
         <section className="animate-fadeIn max-w-xl space-y-6">
-          <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-            Viability engine
-          </p>
-          <h1 className="font-mono text-5xl font-bold tracking-tight text-zinc-100 sm:text-7xl">
-            RUPERT
-          </h1>
-          <p className="text-2xl font-semibold tracking-tight text-zinc-200 sm:text-3xl">
-            Your idea will not survive this.
-          </p>
-          <p className="max-w-md text-sm leading-6 text-zinc-400">
+          <p className="caption-mono text-muted-foreground">Viability engine</p>
+          <h1 className="h0 font-mono tracking-tight">RUPERT</h1>
+          <p className="h2 tracking-tight text-foreground/90">Your idea will not survive this.</p>
+          <p className="description max-w-md text-muted-foreground">
             Adversarial idea stress-testing. Zero sycophancy. Local-first. Bring your own keys.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/sign-in"
-              className="rounded bg-zinc-100 px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-950 transition hover:bg-zinc-200"
-            >
-              Stress-test an idea
-            </Link>
-            <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-600">
-              Sign in required
-            </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <Button asChild size="md">
+              <Link href="/sign-in">Stress-test an idea</Link>
+            </Button>
+            <p className="caption-mono text-muted-foreground">Sign in required</p>
           </div>
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 pt-2 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-2">
             {PRINCIPLES.map((principle) => (
-              <li key={principle} className="flex items-center gap-2">
-                <span className="inline-block h-1 w-1 rounded-full bg-zinc-500" aria-hidden />
+              <li key={principle} className="caption-mono flex items-center gap-2 text-muted-foreground">
+                <span className="inline-block size-1 rounded-full bg-muted-foreground" aria-hidden />
                 {principle}
               </li>
             ))}
@@ -80,79 +70,63 @@ export function LandingPage() {
         </section>
 
         <aside className="animate-fadeIn w-full max-w-md space-y-4" aria-hidden>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
-            <div className="flex items-start justify-between gap-3">
+          <Card className="p-6">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                  Sample verdict
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-zinc-100">AI for everything</h2>
+                <p className="caption-mono text-muted-foreground">Sample verdict</p>
+                <h2 className="h3 mt-2">AI for everything</h2>
               </div>
-              <span className="shrink-0 rounded border border-rose-600 bg-rose-950 px-3 py-1 text-xs font-mono font-bold tracking-wider text-rose-400">
-                HARD NO GO
-              </span>
+              <Badge variant="destructive">Hard no go</Badge>
             </div>
-            <p className="mt-3 text-xs leading-5 text-zinc-400">
+            <p className="description mt-4 text-muted-foreground">
               No buyer, no wedge, no reason this exists. A thin wrapper on someone else&apos;s model.
             </p>
-            <div className="mt-4 border-t border-zinc-800 pt-4 text-right">
-              <span className="block text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                Composite score
-              </span>
-              <span className="font-mono text-4xl font-extrabold text-rose-400">
+            <div className="mt-6 border-t border-border pt-4 text-right">
+              <span className="caption-mono block text-muted-foreground">Composite score</span>
+              <span className="font-mono text-4xl font-extrabold text-destructive">
                 41
-                <span className="text-lg text-zinc-600">/100</span>
+                <span className="text-lg text-muted-foreground">/100</span>
               </span>
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
-            <h3 className="mb-3 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-              Instant kill trigger status
-            </h3>
+          <Card className="p-6">
+            <h3 className="caption-mono mb-4 text-muted-foreground">Instant kill trigger status</h3>
             <div className="space-y-2">
               {MOCK_TRIGGERS.map((trigger) => (
-                <div key={trigger.name} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-zinc-300">{trigger.name}</span>
-                  <span
-                    className={`rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
-                      trigger.triggered
-                        ? "border border-rose-800 bg-rose-950 text-rose-400"
-                        : "bg-zinc-800 text-zinc-500"
-                    }`}
-                  >
-                    {trigger.triggered ? "TRIGGERED" : "CLEARED"}
-                  </span>
+                <div key={trigger.name} className="flex items-center justify-between gap-2">
+                  <span className="description text-foreground/90">{trigger.name}</span>
+                  <Badge variant={trigger.triggered ? "destructive" : "muted"}>
+                    {trigger.triggered ? "Triggered" : "Cleared"}
+                  </Badge>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
-            <h3 className="mb-3 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-              Dimension scores
-            </h3>
+          <Card className="p-6">
+            <h3 className="caption-mono mb-4 text-muted-foreground">Dimension scores</h3>
             <div className="space-y-2">
               {MOCK_DIMENSIONS.map((dimension) => (
-                <div key={dimension.name} className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-300">{dimension.name}</span>
-                  <span className={`font-mono font-bold ${scoreColor(dimension.score)}`}>
+                <div key={dimension.name} className="flex items-center justify-between">
+                  <span className="description text-foreground/90">{dimension.name}</span>
+                  <span className={`font-mono font-bold ${scoreTextClass(dimension.score)}`}>
                     {dimension.score}/10
                   </span>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </aside>
       </main>
 
-      <footer className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800/80 px-5 py-4 text-[11px] font-mono uppercase tracking-wider text-zinc-600 sm:px-8">
-        <p>Adversarial by design</p>
+      <footer className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-t border-border/80 px-6 py-4 md:px-8">
+        <p className="caption-mono text-muted-foreground">Adversarial by design</p>
         <div className="flex gap-4">
-          <Link href="/privacy" className="hover:text-zinc-400">
+          <Link href="/privacy" className="caption-mono text-muted-foreground hover-interact hover:text-foreground">
             Privacy
           </Link>
-          <Link href="/terms" className="hover:text-zinc-400">
+          <Link href="/terms" className="caption-mono text-muted-foreground hover-interact hover:text-foreground">
             Terms
           </Link>
         </div>

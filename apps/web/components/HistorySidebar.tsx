@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { EvaluationReport } from "@rupert/core";
 
 interface HistorySidebarProps {
@@ -16,50 +19,47 @@ export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDele
   const onEmptyForm = !currentId;
 
   return (
-    <aside className="w-full lg:w-72 shrink-0 p-4 bg-zinc-900 border border-zinc-800 rounded-lg h-fit">
-      <button
-        type="button"
-        onClick={onNewIdea}
-        disabled={onEmptyForm}
-        className={`w-full mb-4 px-3 py-2 text-xs font-mono uppercase tracking-wider font-bold rounded transition ${
-          onEmptyForm
-            ? "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
-            : "bg-zinc-100 hover:bg-zinc-200 text-zinc-950"
-        }`}
-      >
-        New idea
-      </button>
-      <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">Local history</h3>
-      {latest && previous && (
-        <div className="mb-4 p-3 bg-zinc-950 border border-zinc-800 rounded text-xs font-mono text-zinc-400">
-          Last two: {latest.ideaName} {latest.compositeScore} vs {previous.ideaName} {previous.compositeScore}
-        </div>
-      )}
-      {history.length === 0 && <p className="text-xs text-zinc-500">No evaluations stored in this browser.</p>}
-      <ul className="space-y-2 max-h-[28rem] overflow-auto">
-        {history.map((report) => (
-          <li
-            key={report.id}
-            className={`p-3 rounded border ${
-              currentId === report.id ? "border-zinc-500 bg-zinc-800" : "border-zinc-800 bg-zinc-950"
-            }`}
-          >
-            <button type="button" onClick={() => onSelect(report)} className="text-left w-full">
-              <div className="text-sm text-zinc-200 truncate">{report.ideaName}</div>
-              <div className="text-[10px] font-mono text-zinc-500 mt-1">
-                {report.compositeScore}/100 · {report.verdict.replaceAll("_", " ")}
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(report.id)}
-              className="mt-2 text-[10px] font-mono uppercase text-rose-400"
+    <aside className="h-fit w-full shrink-0 lg:w-72">
+      <Card className="p-4">
+        <Button type="button" size="lg" disabled={onEmptyForm} onClick={onNewIdea} className="mb-4">
+          New idea
+        </Button>
+        <h3 className="caption-mono mb-4 text-muted-foreground">Local history</h3>
+        {latest && previous && (
+          <div className="caption-mono mb-4 rounded-md border border-border bg-background p-4 text-muted-foreground">
+            Last two: {latest.ideaName} {latest.compositeScore} vs {previous.ideaName}{" "}
+            {previous.compositeScore}
+          </div>
+        )}
+        {history.length === 0 && (
+          <p className="description text-muted-foreground">No evaluations stored in this browser.</p>
+        )}
+        <ul className="max-h-112 space-y-2 overflow-auto">
+          {history.map((report) => (
+            <li
+              key={report.id}
+              className={cn(
+                "rounded-md border p-4",
+                currentId === report.id ? "border-border bg-secondary" : "border-border bg-background",
+              )}
             >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+              <button type="button" onClick={() => onSelect(report)} className="w-full text-left">
+                <div className="h5 truncate text-foreground">{report.ideaName}</div>
+                <div className="caption-mono mt-2 text-muted-foreground">
+                  {report.compositeScore}/100 · {report.verdict.replaceAll("_", " ")}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(report.id)}
+                className="caption-mono mt-2 text-destructive hover-interact hover:text-destructive/80"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </aside>
   );
 }

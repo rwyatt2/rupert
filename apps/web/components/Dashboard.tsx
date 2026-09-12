@@ -15,6 +15,8 @@ import { IdeaForm } from "@/components/IdeaForm";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Scorecard } from "@/components/Scorecard";
 import { SettingsModal, type SettingsTab } from "@/components/SettingsModal";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   briefNoteFromAttachment,
   ideaFromAttachment,
@@ -37,6 +39,7 @@ import {
   type InputMode,
   type McpUiSettings,
 } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 
@@ -49,27 +52,27 @@ function Banner({
   message: string;
   onDismiss: () => void;
 }) {
-  const styles =
-    tone === "error"
-      ? "bg-rose-950/40 border-rose-800 text-rose-300"
-      : "bg-zinc-900 border-zinc-700 text-zinc-300";
-  const dismissStyles =
-    tone === "error"
-      ? "text-rose-400/70 hover:text-rose-200"
-      : "text-zinc-500 hover:text-zinc-200";
-
   return (
-    <div className={`flex items-start justify-between gap-3 p-4 border rounded text-xs font-mono ${styles}`}>
-      <p className="min-w-0">{message}</p>
-      <button
+    <Card
+      className={cn(
+        "flex items-start justify-between gap-4 p-4",
+        tone === "error"
+          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          : "border-border bg-card text-muted-foreground",
+      )}
+    >
+      <p className="description min-w-0">{message}</p>
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={onDismiss}
         aria-label="Dismiss notification"
-        className={`shrink-0 text-[10px] uppercase tracking-wider ${dismissStyles}`}
+        className="shrink-0 normal-case tracking-normal"
       >
         Dismiss
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 
@@ -101,7 +104,6 @@ export function Dashboard() {
         next = resolved;
       }
     }
-    // Hydrate per-user browser state after Clerk identifies the session.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage load
     setSettings(next);
     setMcp(getMcpUiSettings(userId));
@@ -221,8 +223,8 @@ export function Dashboard() {
   if (!isLoaded || !userId || !settings) return null;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-6 md:p-12 selection:bg-zinc-800">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main className="min-h-screen bg-background p-6 selection:bg-secondary md:p-12">
+      <div className="mx-auto max-w-6xl space-y-8">
         <Header
           settings={settings}
           onOpenSettings={() => openSettings("models")}
@@ -232,27 +234,19 @@ export function Dashboard() {
         />
 
         {errorMessage && (
-          <Banner
-            tone="error"
-            message={errorMessage}
-            onDismiss={() => setErrorMessage(null)}
-          />
+          <Banner tone="error" message={errorMessage} onDismiss={() => setErrorMessage(null)} />
         )}
 
         {stoppedMessage && (
-          <Banner
-            tone="neutral"
-            message={stoppedMessage}
-            onDismiss={() => setStoppedMessage(null)}
-          />
+          <Banner tone="neutral" message={stoppedMessage} onDismiss={() => setStoppedMessage(null)} />
         )}
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1">
             {currentReport ? (
               <Scorecard report={currentReport} onReset={handleNewIdea} />
             ) : (
-              <div className="space-y-3 max-w-3xl mx-auto">
+              <div className="mx-auto max-w-3xl space-y-4">
                 <FileDropZone
                   toolbar={<ModeToggle value={inputMode} onChange={handleModeChange} disabled={isLoading || ingesting} />}
                   attachment={attachment}
@@ -302,18 +296,18 @@ export function Dashboard() {
       </div>
 
       {isSettingsOpen && (
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        initialTab={settingsTab}
-        userId={userId}
-        settings={settings}
-        mcp={mcp}
-        onSave={(updated, nextMcp) => {
-          setSettings(updated);
-          setMcp(nextMcp);
-        }}
-      />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          initialTab={settingsTab}
+          userId={userId}
+          settings={settings}
+          mcp={mcp}
+          onSave={(updated, nextMcp) => {
+            setSettings(updated);
+            setMcp(nextMcp);
+          }}
+        />
       )}
     </main>
   );

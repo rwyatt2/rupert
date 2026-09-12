@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { clerkErrorText, firstHookError } from "@/lib/auth-errors";
 import { finishSession } from "@/lib/finish-session";
@@ -9,7 +11,7 @@ import { useEffect, useState, type FormEvent } from "react";
 
 function GoogleIcon() {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
+    <svg className="size-4" viewBox="0 0 24 24" aria-hidden>
       <path
         fill="currentColor"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -32,14 +34,11 @@ function GoogleIcon() {
 
 function GitHubIcon() {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.3-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 1.6 18.3 1.9 18.3 1.9c.6 1.6.2 2.8.1 3.1.8.9 1.2 2 1.2 3.3 0 4.6-2.8 5.6-5.5 6 .4.3.8 1 .8 2v3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z" />
     </svg>
   );
 }
-
-const oauthButtonClass =
-  "flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-800 disabled:opacity-50";
 
 export function SignInForm() {
   const router = useRouter();
@@ -148,81 +147,85 @@ export function SignInForm() {
       <div className="space-y-2 text-center">
         <Link
           href="/"
-          className="inline-block font-mono text-xs uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-300"
+          className="caption-mono inline-block text-muted-foreground hover-interact hover:text-foreground"
         >
           Rupert
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Sign in to Rupert</h1>
-        <p className="text-sm text-zinc-500">Use your email or connect a provider.</p>
+        <h1 className="h2 tracking-tight">Sign in to Rupert</h1>
+        <p className="description text-muted-foreground">Use your email or connect a provider.</p>
       </div>
 
       {step === "email" ? (
         <>
           <div className="space-y-2">
-            <button type="button" className={oauthButtonClass} disabled={busy} onClick={() => void oauth("oauth_google")}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              className="normal-case tracking-normal font-medium"
+              disabled={busy}
+              onClick={() => void oauth("oauth_google")}
+            >
               <GoogleIcon />
               Continue with Google
-            </button>
-            <button type="button" className={oauthButtonClass} disabled={busy} onClick={() => void oauth("oauth_github")}>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              className="normal-case tracking-normal font-medium"
+              disabled={busy}
+              onClick={() => void oauth("oauth_github")}
+            >
               <GitHubIcon />
               Continue with GitHub
-            </button>
+            </Button>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-wider text-zinc-500">
-            <span className="h-px flex-1 bg-zinc-800" />
-            or email
-            <span className="h-px flex-1 bg-zinc-800" />
+          <div className="flex items-center gap-4">
+            <span className="h-px flex-1 bg-border" />
+            <span className="caption-mono text-muted-foreground">or email</span>
+            <span className="h-px flex-1 bg-border" />
           </div>
 
-          <form onSubmit={(event) => void sendCode(event)} className="space-y-3">
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-zinc-200">Email</span>
-              <input
+          <form onSubmit={(event) => void sendCode(event)} className="space-y-4">
+            <label className="block space-y-2">
+              <span className="h5 text-foreground">Email</span>
+              <Input
                 type="email"
                 autoComplete="email"
                 placeholder="you@company.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
               />
             </label>
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full rounded-lg bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
-            >
+            <Button type="submit" size="lg" className="normal-case tracking-normal font-semibold" disabled={busy}>
               Send verification code
-            </button>
+            </Button>
           </form>
         </>
       ) : (
-        <form onSubmit={(event) => void verifyCode(event)} className="space-y-3">
-          <p className="text-sm text-zinc-400">
-            We sent a code to <span className="text-zinc-200">{email}</span>
+        <form onSubmit={(event) => void verifyCode(event)} className="space-y-4">
+          <p className="description text-muted-foreground">
+            We sent a code to <span className="text-foreground">{email}</span>
           </p>
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-zinc-200">Verification code</span>
-            <input
+          <label className="block space-y-2">
+            <span className="h5 text-foreground">Verification code</span>
+            <Input
               inputMode="numeric"
               autoComplete="one-time-code"
               placeholder="123456"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-lg bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
-          >
+          <Button type="submit" size="lg" className="normal-case tracking-normal font-semibold" disabled={busy}>
             Continue
-          </button>
-          <div className="flex items-center justify-between text-xs text-zinc-500">
+          </Button>
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              className="hover:text-zinc-300"
+              className="h6 text-muted-foreground hover-interact hover:text-foreground"
               onClick={() => {
                 setStep("email");
                 setCode("");
@@ -232,22 +235,27 @@ export function SignInForm() {
             >
               Use a different email
             </button>
-            <button type="button" className="hover:text-zinc-300" disabled={busy} onClick={() => void resend()}>
+            <button
+              type="button"
+              className="h6 text-muted-foreground hover-interact hover:text-foreground disabled:opacity-50"
+              disabled={busy}
+              onClick={() => void resend()}
+            >
               Resend code
             </button>
           </div>
         </form>
       )}
 
-      {error && <p className="text-center text-sm text-rose-400">{error}</p>}
+      {error && <p className="text-center description text-destructive">{error}</p>}
 
-      <p className="text-center text-xs text-zinc-500">
+      <p className="text-center h6 text-muted-foreground">
         By continuing, you agree to Rupert&apos;s{" "}
-        <Link href="/terms" className="underline decoration-zinc-600 underline-offset-2 hover:text-zinc-300">
+        <Link href="/terms" className="underline decoration-border underline-offset-2 hover-interact hover:text-foreground">
           Terms of Use
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="underline decoration-zinc-600 underline-offset-2 hover:text-zinc-300">
+        <Link href="/privacy" className="underline decoration-border underline-offset-2 hover-interact hover:text-foreground">
           Privacy Policy
         </Link>
         .

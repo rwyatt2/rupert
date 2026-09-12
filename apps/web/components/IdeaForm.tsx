@@ -1,7 +1,12 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { IDEA_TYPES, INDUSTRIES, type IdeaInput } from "@rupert/core";
 import { RunStatusBar } from "@/components/RunStatusBar";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 type IdeaFormState = Omit<IdeaInput, "industry" | "ideaType"> & {
@@ -39,9 +44,10 @@ function toFormState(idea: IdeaInput | null | undefined): IdeaFormState {
   };
 }
 
-const fieldClass =
-  "w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500";
-const labelClass = "block text-xs font-mono uppercase text-zinc-400 mb-1";
+const fieldClass = cn(
+  "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+);
 
 export function IdeaForm({
   onSubmit,
@@ -54,7 +60,6 @@ export function IdeaForm({
 
   useEffect(() => {
     setFormData(toFormState(initialIdea));
-    // Prefill only when a new file is attached or removed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillNonce]);
 
@@ -65,150 +70,146 @@ export function IdeaForm({
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (isLoading) return;
-        if (!formData.industry || !formData.ideaType) return;
-        onSubmit({ ...formData, industry: formData.industry, ideaType: formData.ideaType });
-      }}
-      className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-6"
-    >
-      <div>
-        <h2 className="text-xl font-bold text-zinc-100">Submit idea for red-teaming</h2>
-        <p className="text-xs text-zinc-400 mt-1">
+    <Card className="space-y-6">
+      <CardHeader>
+        <CardTitle>Submit idea for red-teaming</CardTitle>
+        <CardDescription>
           Vague inputs get vague kills. Quantify the pain or this will score like a toy.
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Idea / product name</label>
-          <input required name="name" value={formData.name} onChange={handleChange} className={fieldClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Industry</label>
-          <select required name="industry" value={formData.industry} onChange={handleChange} className={fieldClass}>
-            <option value="" disabled>
-              Select industry
-            </option>
-            {INDUSTRIES.map((industry) => (
-              <option key={industry} value={industry}>
-                {industry}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (isLoading) return;
+          if (!formData.industry || !formData.ideaType) return;
+          onSubmit({ ...formData, industry: formData.industry, ideaType: formData.ideaType });
+        }}
+        className="space-y-6"
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="name">Idea / product name</Label>
+            <Input required id="name" name="name" value={formData.name} onChange={handleChange} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="industry">Industry</Label>
+            <select required id="industry" name="industry" value={formData.industry} onChange={handleChange} className={fieldClass}>
+              <option value="" disabled>
+                Select industry
               </option>
-            ))}
-          </select>
+              {INDUSTRIES.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Category / type</label>
-          <select required name="ideaType" value={formData.ideaType} onChange={handleChange} className={fieldClass}>
-            <option value="" disabled>
-              Select category
-            </option>
-            {IDEA_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="ideaType">Category / type</Label>
+            <select required id="ideaType" name="ideaType" value={formData.ideaType} onChange={handleChange} className={fieldClass}>
+              <option value="" disabled>
+                Select category
               </option>
-            ))}
-          </select>
+              {IDEA_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="industryDetail">Industry detail (optional)</Label>
+            <Input
+              id="industryDetail"
+              name="industryDetail"
+              value={formData.industryDetail || ""}
+              onChange={handleChange}
+              placeholder="e.g. InsurTech claims ops"
+            />
+          </div>
         </div>
-        <div>
-          <label className={labelClass}>Industry detail (optional)</label>
-          <input
-            name="industryDetail"
-            value={formData.industryDetail || ""}
-            onChange={handleChange}
-            placeholder="e.g. InsurTech claims ops"
-            className={fieldClass}
-          />
+
+        <div className="space-y-2">
+          <Label htmlFor="targetCustomer">Target customer (ICP)</Label>
+          <Input required id="targetCustomer" name="targetCustomer" value={formData.targetCustomer} onChange={handleChange} />
         </div>
-      </div>
 
-      <div>
-        <label className={labelClass}>Target customer (ICP)</label>
-        <input
-          required
-          name="targetCustomer"
-          value={formData.targetCustomer}
-          onChange={handleChange}
-          className={fieldClass}
-        />
-      </div>
-
-      <div>
-        <label className={labelClass}>Specific problem statement</label>
-        <textarea
-          required
-          rows={3}
-          name="problemStatement"
-          value={formData.problemStatement}
-          onChange={handleChange}
-          placeholder="Who is losing time or money right now? Quantify it."
-          className={fieldClass}
-        />
-      </div>
-
-      <div>
-        <label className={labelClass}>Proposed solution and claimed moat</label>
-        <textarea
-          required
-          rows={3}
-          name="proposedSolution"
-          value={formData.proposedSolution}
-          onChange={handleChange}
-          placeholder="Why is this not a prompt or a feature of an incumbent?"
-          className={fieldClass}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Monetization and delivery</label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="problemStatement">Specific problem statement</Label>
+          <textarea
             required
-            name="monetizationModel"
-            value={formData.monetizationModel}
+            id="problemStatement"
+            rows={3}
+            name="problemStatement"
+            value={formData.problemStatement}
             onChange={handleChange}
+            placeholder="Who is losing time or money right now? Quantify it."
             className={fieldClass}
           />
         </div>
-        <div>
-          <label className={labelClass}>Existing alternatives</label>
-          <input
+
+        <div className="space-y-2">
+          <Label htmlFor="proposedSolution">Proposed solution and claimed moat</Label>
+          <textarea
             required
-            name="existingAlternatives"
-            value={formData.existingAlternatives}
+            id="proposedSolution"
+            rows={3}
+            name="proposedSolution"
+            value={formData.proposedSolution}
             onChange={handleChange}
+            placeholder="Why is this not a prompt or a feature of an incumbent?"
             className={fieldClass}
           />
         </div>
-      </div>
 
-      <div>
-        <label className={labelClass}>Prior evidence (optional, unverified)</label>
-        <textarea
-          rows={2}
-          name="priorEvidence"
-          value={formData.priorEvidence || ""}
-          onChange={handleChange}
-          placeholder="Notes from other MCPs, calls, or research. Treated as untrusted."
-          className={fieldClass}
-        />
-      </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="monetizationModel">Monetization and delivery</Label>
+            <Input
+              required
+              id="monetizationModel"
+              name="monetizationModel"
+              value={formData.monetizationModel}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="existingAlternatives">Existing alternatives</Label>
+            <Input
+              required
+              id="existingAlternatives"
+              name="existingAlternatives"
+              value={formData.existingAlternatives}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
 
-      {isLoading ? (
-        <RunStatusBar onCancel={onCancel} />
-      ) : (
-        <button
-          type="submit"
-          className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-mono font-bold text-xs uppercase tracking-wider rounded transition"
-        >
-          Execute stress test
-        </button>
-      )}
-    </form>
+        <div className="space-y-2">
+          <Label htmlFor="priorEvidence">Prior evidence (optional, unverified)</Label>
+          <textarea
+            id="priorEvidence"
+            rows={2}
+            name="priorEvidence"
+            value={formData.priorEvidence || ""}
+            onChange={handleChange}
+            placeholder="Notes from other MCPs, calls, or research. Treated as untrusted."
+            className={fieldClass}
+          />
+        </div>
+
+        {isLoading ? (
+          <RunStatusBar onCancel={onCancel} />
+        ) : (
+          <Button type="submit" size="lg">
+            Execute stress test
+          </Button>
+        )}
+      </form>
+    </Card>
   );
 }

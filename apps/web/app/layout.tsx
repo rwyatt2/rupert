@@ -11,25 +11,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const keys = clerkKeyStatus();
-  // #region agent log
-  fetch("http://127.0.0.1:7316/ingest/f5df121e-99d4-46b1-8d42-b5498b9cb05c", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "42079f" },
-    body: JSON.stringify({
-      sessionId: "42079f",
-      runId: "post-fix",
-      location: "layout.tsx:render",
-      message: "root layout render",
-      data: { ...keys, vercelEnv: process.env.VERCEL_ENV || null, nodeEnv: process.env.NODE_ENV || null },
-      timestamp: Date.now(),
-      hypothesisId: "E",
-    }),
-  }).catch(() => {});
-  // #endregion
 
   const tree = (
-    <html lang="en">
-      <body className="min-h-screen bg-zinc-950 font-sans antialiased">{children}</body>
+    <html lang="en" className="dark">
+      <body className="min-h-screen bg-background font-sans antialiased text-foreground">{children}</body>
     </html>
   );
 
