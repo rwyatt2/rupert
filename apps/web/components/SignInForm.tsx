@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { copy } from "@/lib/copy";
 import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { clerkErrorText, firstHookError } from "@/lib/auth-errors";
 import { finishSession } from "@/lib/finish-session";
@@ -72,7 +73,7 @@ export function SignInForm() {
     setError(null);
     const identifier = email.trim();
     if (!identifier) {
-      setError("Enter an email address.");
+      setError(copy.auth.errorEmailRequired);
       return;
     }
 
@@ -107,7 +108,7 @@ export function SignInForm() {
     setError(null);
     const trimmed = code.trim();
     if (!trimmed) {
-      setError("Enter the verification code.");
+      setError(copy.auth.errorCodeRequired);
       return;
     }
 
@@ -143,16 +144,16 @@ export function SignInForm() {
   };
 
   return (
-    <div className="w-full max-w-sm space-y-6">
+    <div className="w-full max-w-sm space-y-6 px-4 sm:px-0" data-testid="sign-in-form">
       <div className="space-y-2 text-center">
         <Link
           href="/"
           className="caption-mono inline-block text-muted-foreground hover-interact hover:text-foreground"
         >
-          Rupert
+          {copy.brand.name}
         </Link>
-        <h1 className="h2 tracking-tight">Sign in to Rupert</h1>
-        <p className="description text-muted-foreground">Use your email or connect a provider.</p>
+        <h1 className="h2 tracking-tight">{copy.auth.title}</h1>
+        <p className="description text-muted-foreground">{copy.auth.subtitle}</p>
       </div>
 
       {step === "email" ? (
@@ -167,7 +168,7 @@ export function SignInForm() {
               onClick={() => void oauth("oauth_google")}
             >
               <GoogleIcon />
-              Continue with Google
+              {copy.auth.google}
             </Button>
             <Button
               type="button"
@@ -178,51 +179,49 @@ export function SignInForm() {
               onClick={() => void oauth("oauth_github")}
             >
               <GitHubIcon />
-              Continue with GitHub
+              {copy.auth.github}
             </Button>
           </div>
 
           <div className="flex items-center gap-4">
             <span className="h-px flex-1 bg-border" />
-            <span className="caption-mono text-muted-foreground">or email</span>
+            <span className="caption-mono text-muted-foreground">{copy.auth.emailDivider}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
           <form onSubmit={(event) => void sendCode(event)} className="space-y-4">
             <label className="block space-y-2">
-              <span className="h5 text-foreground">Email</span>
+              <span className="h5 text-foreground">{copy.auth.emailLabel}</span>
               <Input
                 type="email"
                 autoComplete="email"
-                placeholder="you@company.com"
+                placeholder={copy.auth.emailPlaceholder}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
             </label>
             <Button type="submit" size="lg" className="normal-case tracking-normal font-semibold" disabled={busy}>
-              Send verification code
+              {copy.auth.sendCode}
             </Button>
           </form>
         </>
       ) : (
         <form onSubmit={(event) => void verifyCode(event)} className="space-y-4">
-          <p className="description text-muted-foreground">
-            We sent a code to <span className="text-foreground">{email}</span>
-          </p>
+          <p className="description text-muted-foreground">{copy.auth.codeSent(email)}</p>
           <label className="block space-y-2">
-            <span className="h5 text-foreground">Verification code</span>
+            <span className="h5 text-foreground">{copy.auth.codeLabel}</span>
             <Input
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="123456"
+              placeholder={copy.auth.codePlaceholder}
               value={code}
               onChange={(event) => setCode(event.target.value)}
             />
           </label>
           <Button type="submit" size="lg" className="normal-case tracking-normal font-semibold" disabled={busy}>
-            Continue
+            {copy.auth.continue}
           </Button>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               className="h6 text-muted-foreground hover-interact hover:text-foreground"
@@ -233,7 +232,7 @@ export function SignInForm() {
                 void signIn.reset();
               }}
             >
-              Use a different email
+              {copy.auth.differentEmail}
             </button>
             <button
               type="button"
@@ -241,7 +240,7 @@ export function SignInForm() {
               disabled={busy}
               onClick={() => void resend()}
             >
-              Resend code
+              {copy.auth.resendCode}
             </button>
           </div>
         </form>
@@ -250,13 +249,13 @@ export function SignInForm() {
       {error && <p className="text-center description text-destructive">{error}</p>}
 
       <p className="text-center h6 text-muted-foreground">
-        By continuing, you agree to Rupert&apos;s{" "}
+        {copy.auth.termsPrefix}{" "}
         <Link href="/terms" className="underline decoration-border underline-offset-2 hover-interact hover:text-foreground">
-          Terms of Use
+          {copy.auth.termsLink}
         </Link>{" "}
         and{" "}
         <Link href="/privacy" className="underline decoration-border underline-offset-2 hover-interact hover:text-foreground">
-          Privacy Policy
+          {copy.auth.privacyLink}
         </Link>
         .
       </p>
