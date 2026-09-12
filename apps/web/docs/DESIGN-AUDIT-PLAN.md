@@ -227,11 +227,13 @@ This document catalogs every gap and organizes remediation into three waves, ord
 - [x] SettingsModal token migration + close button a11y
 - [x] Spacing normalization pass (8pt grid on primary surfaces)
 
-### Wave 3 — Polish & shadcn expansion
-- [ ] `npx shadcn@latest init -d` + Dialog, Tabs, Alert
-- [ ] SettingsModal → Radix Dialog
-- [ ] Focus ring system-wide
-- [ ] Optional light mode (if product requires)
+### Wave 3 — Polish & shadcn expansion (complete)
+- [x] `npx shadcn@latest init -d` + Dialog, Tabs, Alert
+- [x] SettingsModal → Radix Dialog with Tabs
+- [x] ModeToggle and RedTeamTabs → shadcn Tabs
+- [x] Dashboard Banner → Alert component
+- [x] Focus ring system-wide (`@layer base` + `focus-ring` utility)
+- [ ] Optional light mode (deferred — app remains dark-first)
 
 ---
 

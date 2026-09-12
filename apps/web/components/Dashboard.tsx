@@ -15,8 +15,8 @@ import { IdeaForm } from "@/components/IdeaForm";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Scorecard } from "@/components/Scorecard";
 import { SettingsModal, type SettingsTab } from "@/components/SettingsModal";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   briefNoteFromAttachment,
   ideaFromAttachment,
@@ -53,26 +53,27 @@ function Banner({
   onDismiss: () => void;
 }) {
   return (
-    <Card
+    <Alert
+      variant={tone === "error" ? "destructive" : "default"}
       className={cn(
-        "flex items-start justify-between gap-4 p-4",
-        tone === "error"
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
-          : "border-border bg-card text-muted-foreground",
+        "flex items-start gap-4 px-4 py-4",
+        tone === "neutral" && "border-border bg-card text-muted-foreground",
       )}
     >
-      <p className="description min-w-0">{message}</p>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onDismiss}
-        aria-label="Dismiss notification"
-        className="shrink-0 normal-case tracking-normal"
-      >
-        Dismiss
-      </Button>
-    </Card>
+      <AlertDescription className="description min-w-0 flex-1">{message}</AlertDescription>
+      <AlertAction>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onDismiss}
+          aria-label="Dismiss notification"
+          className="normal-case tracking-normal"
+        >
+          Dismiss
+        </Button>
+      </AlertAction>
+    </Alert>
   );
 }
 

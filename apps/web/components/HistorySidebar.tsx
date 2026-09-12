@@ -43,7 +43,11 @@ export function HistorySidebar({ history, currentId, onNewIdea, onSelect, onDele
                 currentId === report.id ? "border-border bg-secondary" : "border-border bg-background",
               )}
             >
-              <button type="button" onClick={() => onSelect(report)} className="w-full text-left">
+              <button
+                type="button"
+                onClick={() => onSelect(report)}
+                className="focus-ring w-full rounded-md text-left"
+              >
                 <div className="h5 truncate text-foreground">{report.ideaName}</div>
                 <div className="caption-mono mt-2 text-muted-foreground">
                   {report.compositeScore}/100 · {report.verdict.replaceAll("_", " ")}

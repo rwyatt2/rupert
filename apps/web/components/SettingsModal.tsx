@@ -1,8 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
   AI_PROVIDERS,
@@ -16,7 +24,7 @@ import {
   type AIProvider,
   type ProviderSettings,
 } from "@rupert/core";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
   emptyProviderProfiles,
   getProviderProfiles,
@@ -54,31 +62,6 @@ function ReadyMark({ ready }: { ready: boolean }) {
     );
   }
   return <span className="caption-mono text-muted-foreground">No key</span>;
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "caption-mono rounded-md px-4 py-2 hover-interact",
-        active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
-  );
 }
 
 function AccountTab() {
@@ -180,8 +163,6 @@ export function SettingsModal({
     });
   }, [settings, mcp, isOpen, initialTab, userId]);
 
-  if (!isOpen) return null;
-
   const syncSettings = (next: ProviderSettings) => {
     setLocalSettings(next);
     setLocalProfiles((prev) => ({
@@ -215,35 +196,33 @@ export function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="max-h-[90vh] w-full max-w-md space-y-6 overflow-y-auto rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <h3 className="caption-mono text-foreground">Settings</h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            aria-label="Close settings"
-            className="normal-case tracking-normal"
-          >
-            Close
-          </Button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="gap-6 sm:max-w-md" showCloseButton>
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="caption-mono text-left font-medium uppercase tracking-wider">
+            Settings
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="flex gap-2 border-b border-border pb-4" role="tablist">
-          <TabButton active={tab === "account"} onClick={() => setTab("account")}>
-            Account
-          </TabButton>
-          <TabButton active={tab === "models"} onClick={() => setTab("models")}>
-            Models
-          </TabButton>
-        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => setTab(value as SettingsTab)}
+          className="gap-6"
+        >
+          <TabsList variant="line" className="caption-mono h-auto w-full justify-start gap-2 bg-transparent p-0">
+            <TabsTrigger value="account" className="px-4 py-2">
+              Account
+            </TabsTrigger>
+            <TabsTrigger value="models" className="px-4 py-2">
+              Models
+            </TabsTrigger>
+          </TabsList>
 
-        {tab === "account" ? (
-          <AccountTab />
-        ) : (
-          <>
+          <TabsContent value="account" className="mt-0">
+            <AccountTab />
+          </TabsContent>
+
+          <TabsContent value="models" className="mt-0 space-y-6">
             <div>
               <Label className="mb-4 block">Provider</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -438,17 +417,17 @@ export function SettingsModal({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter className="border-t border-border bg-transparent p-0 pt-4 sm:justify-end">
               <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel
               </Button>
               <Button type="button" onClick={handleSave}>
                 Save configuration
               </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </DialogFooter>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }
